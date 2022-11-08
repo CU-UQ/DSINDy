@@ -1,3 +1,5 @@
 output/
 docker-compose.yml
 Dockerfile
+
+!output/paper_noise_realizations

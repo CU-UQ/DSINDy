@@ -1,0 +1,4 @@
+output/
+licenses/mosek.lic
+docker-compose,yml
+Dockerfile
