@@ -45,9 +45,10 @@ def extract_data(data, j, m, get_GP=True):
             if get_GP:
                 u_gp = np.vstack((u_gp, ui_gp))
     if get_GP:
-        return(u, u_proj, u_gp)
+        return (u, u_proj, u_gp)
     else:
-        return(u, u_proj)
+        return (u, u_proj)
+
 
 def get_discrete_integral_matrix(t, center=True):
     """Generative the discrete integration matrix."""
@@ -58,7 +59,7 @@ def get_discrete_integral_matrix(t, center=True):
         for i in range(n):
             A[i, i] = A[i, i] / 2
         A[:, 0] = A[:, 0] - A[0, 0]
-    return(A)
+    return (A)
 
 
 def get_derivative_matrix(t):
@@ -79,4 +80,4 @@ def get_derivative_matrix(t):
 
     D = np.vstack((np.eye(m), 1 / t_delta * D1, 1 / (t_delta**2) * D2))
 
-    return(D)
+    return (D)

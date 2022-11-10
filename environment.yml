@@ -3,22 +3,20 @@ channels:
   - conda-forge
   - MOSEK
 dependencies:
-#  - python=3.10.4
   - python<=3.7.13
-  # - numpy=1.22.3
-  - pandas<=1.4.2 #
-  - scikit-learn<=1.0.2 #
+  - pandas<=1.4.2
+  - scikit-learn<=1.0.2
   - notebook=6.4.10
   - nbconvert=6.5.0
-  - plotly=5.7.0 #
-  - python-kaleido<=0.2.1  #   #Needed to export static images from plotly
+  - plotly=5.7.0
+  - python-kaleido<=0.2.1  # Needed to export static images from plotly
   - seaborn=0.11.2
-  # - bokeh=2.4.2
-#  - sympy=1.3 #Environment fails to build with this
   - cvxopt=1.3.0
-  - mosek<=8.1.83 #Hopefully this will speed up socp
+  - mosek<=8.1.83 # Requires license
   - jupytext=1.13.8
+  - flake8=4.0.1
+  - yapf
   - pip=22.0.4
   - pip:
-#    - lowess==1.0.3
     - sigfig==1.3.0
+    - --editable /home/jacqui/DSINDy/

@@ -15,20 +15,18 @@ def find_curvature(x_temp, y_temp, extrema):
     normalization is done using values in extrema=[xmin,ymin,xmax,ymax].
     """
     # Change to a log scale and normalize on [0,1]
-    x = (np.log10(x_temp) - np.log10(extrema[0])) / (
-        np.log10(extrema[2]) - np.log10(extrema[0])
-        )
-    y = (np.log10(y_temp) - np.log10(extrema[1])) / (
-        np.log10(extrema[3]) - np.log10(extrema[1])
-        )
+    x = (np.log10(x_temp) - np.log10(extrema[0])) / (np.log10(extrema[2]) -
+                                                     np.log10(extrema[0]))
+    y = (np.log10(y_temp) - np.log10(extrema[1])) / (np.log10(extrema[3]) -
+                                                     np.log10(extrema[1]))
 
     # If points are on straight line return error
     if (x[0] == x[1] and x[1] == x[2]):
         print('x equal')
-        return('err')
+        return ('err')
     if (y[0] == y[1] and y[1] == y[2]):
         print('y equal')
-        return('err')
+        return ('err')
 
     # Calculate curvature
     d1 = np.sqrt((y[1] - y[0])**2 + (x[1] - x[0])**2)
@@ -39,7 +37,7 @@ def find_curvature(x_temp, y_temp, extrema):
     area = 1 / 2 * (term1 - term2)
     curvature = 4 * area / (d1 * d2 * d3)
 
-    return(curvature)
+    return (curvature)
 
 
 def find_alpha_vec(A, y, method, D=None, B=None, y2=None, opt_params=None):
@@ -82,15 +80,13 @@ def find_alpha_vec(A, y, method, D=None, B=None, y2=None, opt_params=None):
                 sol_res[i] = np.linalg.norm(A @ las.coef_ - y)
                 reg_res[i] = np.sum(np.abs(las.coef_))
             elif method == '2':
-                coef = np.linalg.inv(
-                    A.T @ A + alpha_vec[i] * D.T @ D
-                    ) @ A.T @ y
+                coef = np.linalg.inv(A.T @ A +
+                                     alpha_vec[i] * D.T @ D) @ A.T @ y
                 sol_res[i] = np.linalg.norm(A @ coef - y)
                 reg_res[i] = np.linalg.norm(D @ coef)
             elif method == 'SOCP':
-                sol_res[i], reg_res[i] = op.solve_socp(
-                    y, y2, A, B, D, alpha_vec[i]
-                    )[1:]
+                sol_res[i], reg_res[i] = op.solve_socp(y, y2, A, B, D,
+                                                       alpha_vec[i])[1:]
 
         if np.min(reg_res) == 0:
             a_max = a_max / 2
@@ -101,8 +97,7 @@ def find_alpha_vec(A, y, method, D=None, B=None, y2=None, opt_params=None):
     return alpha_vec, sol_res, reg_res
 
 
-def lassoLCurve(A, y, D=None, B=None,
-                method='2', max_iter=100000, y2=None,
+def lassoLCurve(A, y, D=None, B=None, method='2', max_iter=100000, y2=None,
                 opt_params=None):
     """Run L curve algorithm to find hyperparameter alpha.
 
@@ -126,15 +121,17 @@ def lassoLCurve(A, y, D=None, B=None,
         # On first iteration find initial alpha vec and corresponding extrema
         if iter == 0:
             alpha_vec, sol_res, reg_res = find_alpha_vec(
-                A, y, method, D=D, B=B,
-                y2=y2, opt_params=opt_params)
+                A, y, method, D=D, B=B, y2=y2, opt_params=opt_params)
             alpha_all = np.copy(alpha_vec)
             sol_res_all = np.copy(sol_res)
             reg_res_all = np.copy(reg_res)
 
             extrema = np.array([
-                np.min(sol_res), np.min(reg_res),
-                np.max(sol_res), np.max(reg_res)])
+                np.min(sol_res),
+                np.min(reg_res),
+                np.max(sol_res),
+                np.max(reg_res)
+            ])
 
         # Set a_min and a_max values
         a_min = alpha_vec[0]
@@ -157,8 +154,7 @@ def lassoLCurve(A, y, D=None, B=None,
                 print(alpha_vec)
                 return alpha_vec[0]
             alpha_vec, sol_res, reg_res = find_alpha_vec(
-                A, y, method, D=D, B=B,
-                y2=y2, opt_params=opt_params)
+                A, y, method, D=D, B=B, y2=y2, opt_params=opt_params)
             a_min = alpha_vec[0]
             a_max = alpha_vec[3]
             curvature1 = find_curvature(sol_res[:3], reg_res[:3], extrema)
@@ -204,8 +200,7 @@ def lassoLCurve(A, y, D=None, B=None,
             reg_res[lasso_idx] = np.linalg.norm(D @ coef)
         elif method == 'SOCP':
             sol_res[lasso_idx], reg_res[lasso_idx] = op.solve_socp(
-                y, y2, A, B, D, alpha_vec[lasso_idx]
-                )[1:]
+                y, y2, A, B, D, alpha_vec[lasso_idx])[1:]
 
         alpha_all = np.append(alpha_all, alpha_vec[lasso_idx])
         sol_res_all = np.append(sol_res_all, sol_res[lasso_idx])
@@ -214,9 +209,8 @@ def lassoLCurve(A, y, D=None, B=None,
     return alpha_final, alpha_all, sol_res_all, reg_res_all
 
 
-def get_L_curve_data(A, y, method='1', D=None,
-                     B=None, c_actual=None, tol=1e-12, y2=None,
-                     opt_params=None):
+def get_L_curve_data(A, y, method='1', D=None, B=None, c_actual=None,
+                     tol=1e-12, y2=None, opt_params=None):
     """Gives tsolution and regularization residuals to plot L-curve.
 
     Three optimzation methods are possible:
@@ -247,8 +241,7 @@ def get_L_curve_data(A, y, method='1', D=None,
             reg_res[k] = np.linalg.norm(D @ x)
             sol_res[k] = np.linalg.norm(A @ x - y)
         elif method == 'SOCP':
-            sol_res[k], reg_res[k] = op.solve_socp(
-                y, y2, A, B, D, a)[1:]
+            sol_res[k], reg_res[k] = op.solve_socp(y, y2, A, B, D, a)[1:]
 
         # Check if current alpha is optimal signal
         if c_actual is not None:
@@ -259,13 +252,13 @@ def get_L_curve_data(A, y, method='1', D=None,
                 x_best = x
 
     if c_actual is None:
-        return(reg_res, sol_res, alphas)
+        return (reg_res, sol_res, alphas)
     else:
-        return(reg_res, sol_res, alphas, alpha_best, x_best)
+        return (reg_res, sol_res, alphas, alpha_best, x_best)
 
 
-def findAlphaMaxCurve(A, y, title, plot_results=False,
-                      D=None, B=None, method='1', y2=None, opt_params=None):
+def findAlphaMaxCurve(A, y, title, plot_results=False, D=None, B=None,
+                      method='1', y2=None, opt_params=None):
     """Find alpha_final using the L curve algorithm.
 
     Three optimzation methods are possible:
@@ -278,21 +271,18 @@ def findAlphaMaxCurve(A, y, title, plot_results=False,
         D = np.eye(np.size(A, 1))
 
     alpha_final, alpha_all, sol_res_all, reg_res_all = lassoLCurve(
-        A, y, D=D, method=method, B=B,
-        y2=y2, opt_params=opt_params
-        )
+        A, y, D=D, method=method, B=B, y2=y2, opt_params=opt_params)
 
     if method == '1':
         las = lm.Lasso(alpha=alpha_final, fit_intercept=False,
-                       tol=opt_params['tol'],
-                       max_iter=opt_params['max_iter'])
+                       tol=opt_params['tol'], max_iter=opt_params['max_iter'])
         las.fit(A, y)
         sol_res = np.linalg.norm(A @ las.coef_ - y)
         reg_res = np.sum(np.abs(D @ las.coef_))
     elif method == '2':
         coef = np.linalg.inv(
-            np.transpose(A) @ A + alpha_final * np.transpose(D) @ D
-            ) @ np.transpose(A) @ y
+            np.transpose(A) @ A +
+            alpha_final * np.transpose(D) @ D) @ np.transpose(A) @ y
         sol_res = np.linalg.norm(A @ coef - y)
         reg_res = np.linalg.norm(D @ coef)
     elif method == 'SOCP':
@@ -300,16 +290,15 @@ def findAlphaMaxCurve(A, y, title, plot_results=False,
 
     if plot_results:
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=reg_res_all, y=sol_res_all,
-                                 text=alpha_all, mode='markers'))
-        fig.add_trace(go.Scatter(x=[reg_res], y=[sol_res],
-                                 text=alpha_final))
+        fig.add_trace(
+            go.Scatter(x=reg_res_all, y=sol_res_all, text=alpha_all,
+                       mode='markers'))
+        fig.add_trace(go.Scatter(x=[reg_res], y=[sol_res], text=alpha_final))
         fig.update_xaxes(type='log',
                          title_text='Regularization residual (l1 or l2)')
-        fig.update_yaxes(type='log',
-                         title_text='Solution residual (l2)')
+        fig.update_yaxes(type='log', title_text='Solution residual (l2)')
         fig.update_layout(title_text=title, width=500, height=350,
                           showlegend=False)
         fig.show()
 
-    return(alpha_final, reg_res, sol_res)
+    return (alpha_final, reg_res, sol_res)

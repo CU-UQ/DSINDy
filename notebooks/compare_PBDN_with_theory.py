@@ -1,4 +1,3 @@
-
 """Compare numerical results with theoretical predicitons."""
 
 # Set up
@@ -8,14 +7,13 @@ import numpy.linalg as la
 import scipy.special as sps
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import pickle
 
 import eqndiscov.denoising_functions as df
 import eqndiscov.ODE_systems as sys
 import eqndiscov.utils as utils
 import eqndiscov.monomial_library_utils as mlu
 
-import importlib
-importlib.reload(df)
 # Pull out matplotlib colors
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 mpl.rc('text.latex', preamble=r'\usepackage{bm}')
@@ -24,13 +22,12 @@ plt.rcParams['axes.autolimit_mode'] = "data"
 plt.rcParams['axes.xmargin'] = 0
 plt.rcParams['axes.ymargin'] = .05
 
-plt.rc('font', size=10)  # controls default text size
-plt.rc('axes', titlesize=10)  # fontsize of the title
-plt.rc('axes', labelsize=10)  # fontsize of the x and y labels
-plt.rc('xtick', labelsize=8)  # fontsize of the x tick labels
-plt.rc('ytick', labelsize=8)  # fontsize of the y tick labels
-plt.rc('legend', fontsize=5)  # fontsize of the legend
-
+plt.rc('font', size=10)           # controls default text size
+plt.rc('axes', titlesize=10)      # fontsize of the title
+plt.rc('axes', labelsize=10)      # fontsize of the x and y labels
+plt.rc('xtick', labelsize=8)      # fontsize of the x tick labels
+plt.rc('ytick', labelsize=8)      # fontsize of the y tick labels
+plt.rc('legend', fontsize=5)      # fontsize of the legend
 
 # %% USER DEFINED PARAMETERS
 system = '4'
@@ -62,19 +59,18 @@ t = np.linspace(0, ttrain, num=N)
 nu = 0.1
 sigma = np.sqrt(nu)
 u, u_actual, du_actual, c_actual = sys.setup_system(
-    t, nu, d, system[0], sys_params=sys_params, u0=u0,
-    seed=2)
+    t, nu, d, system[0], sys_params=sys_params, u0=u0, seed=2)
 for i in range(m):
     fig2, ax2 = plt.subplots(1)
     ax2.plot(t, u_actual[i, :])
     fig2.show()
 
-
 # %%
 
-def get_error_with_increasing_N(nu, N_vec, seed_vec, use_actual_P=False,
-                                alpha=1, max_iter=1, center_Theta=False,
-                                intervals=1, realizations=50):
+
+def get_error_with_increasing_N(
+        nu, N_vec, seed_vec, use_actual_P=False, alpha=1, max_iter=1,
+        center_Theta=False, intervals=1, realizations=50):
     """Obtain smoothing error at multiple values of N."""
     u_err_mean_vec = []
     u_err_std_vec = []
@@ -89,12 +85,12 @@ def get_error_with_increasing_N(nu, N_vec, seed_vec, use_actual_P=False,
     # Find noisy/actual measurements and actual derivative/coef vector
     sigma = np.sqrt(nu)
     u, u_actual, du_actual, c_actual = sys.setup_system(
-        t, nu, d, system[0], sys_params=sys_params, u0=u0,
-        seed=0)
+        t, nu, d, system[0], sys_params=sys_params, u0=u0, seed=0)
     u_err_theory_vec.append(
         np.sqrt(nu / la.norm(u_actual, axis=1)**2 * (P + 1)))
     # u_err_mean_noise_vec.append(utils.rel_err(u, u_actual))
-    u_err_mean_noise_vec.append(np.sqrt(nu * N_min) * 1 / la.norm(u_actual, axis=1))
+    u_err_mean_noise_vec.append(
+        np.sqrt(nu * N_min) * 1 / la.norm(u_actual, axis=1))
     for i, N in enumerate(N_vec):
         u_err_vec = []
         u_err_noise_vec = []
@@ -110,9 +106,9 @@ def get_error_with_increasing_N(nu, N_vec, seed_vec, use_actual_P=False,
             # Projection-based smoothing
             A = utils.get_discrete_integral_matrix(t)
             u_proj = df.projection_denoising(
-                u, u_actual, d, sigma * np.ones(m), A,
-                alpha=alpha, max_iter=max_iter, plot=True,
-                use_actual_P=use_actual_P, center_Theta=center_Theta)[0]
+                u, u_actual, d, sigma * np.ones(m), A, alpha=alpha,
+                max_iter=max_iter, plot=True, use_actual_P=use_actual_P,
+                center_Theta=center_Theta)[0]
 
             # Save relative error
             u_err = utils.rel_err(np.array(u_proj), u_actual)
@@ -124,9 +120,9 @@ def get_error_with_increasing_N(nu, N_vec, seed_vec, use_actual_P=False,
         # Save mean/std relative error
         u_err_mean_vec.append(np.mean(np.array(u_err_vec), axis=0))
         u_err_std_vec.append(np.std(np.array(u_err_vec), axis=0))
-        # u_err_mean_noise_vec.append(np.mean(np.array(u_err_noise_vec), axis=0))
         u_err_std_noise_vec.append(np.std(np.array(u_err_noise_vec), axis=0))
-        u_err_mean_noise_vec.append(np.sqrt(nu * N) * 1 / la.norm(u_actual, axis=1))
+        u_err_mean_noise_vec.append(
+            np.sqrt(nu * N) * 1 / la.norm(u_actual, axis=1))
 
         # Theoretical error expectation (does not include quadrature error)
         u_err_theory_vec.append(
@@ -136,12 +132,12 @@ def get_error_with_increasing_N(nu, N_vec, seed_vec, use_actual_P=False,
     # Find noisy/actual measurements and actual derivative/coef vector
     sigma = np.sqrt(nu)
     u, u_actual, du_actual, c_actual = sys.setup_system(
-        t, nu, d, system[0], sys_params=sys_params, u0=u0,
-        seed=0)
+        t, nu, d, system[0], sys_params=sys_params, u0=u0, seed=0)
     u_err_theory_vec.append(
         np.sqrt(nu / la.norm(u_actual, axis=1)**2 * (P + 1)))
     # u_err_mean_noise_vec.append(utils.rel_err(u, u_actual))
-    u_err_mean_noise_vec.append(np.sqrt(nu * N_max) * 1 / la.norm(u_actual, axis=1))
+    u_err_mean_noise_vec.append(
+        np.sqrt(nu * N_max) * 1 / la.norm(u_actual, axis=1))
     u_err_mean_vec = np.array(u_err_mean_vec).T
     u_err_std_vec = np.array(u_err_std_vec).T
 
@@ -149,11 +145,13 @@ def get_error_with_increasing_N(nu, N_vec, seed_vec, use_actual_P=False,
     u_err_mean_noise_vec = np.array(u_err_mean_noise_vec).T
     u_err_std_noise_vec = np.array(u_err_std_noise_vec).T
 
-    return(u_err_mean_vec, u_err_std_vec, u_err_mean_noise_vec,
-           u_err_std_noise_vec, u_err_theory_vec)
+    return (
+        u_err_mean_vec, u_err_std_vec, u_err_mean_noise_vec,
+        u_err_std_noise_vec, u_err_theory_vec)
 
 
 # %% PLOT SHOWING CONVERGENCE WHEN WE KNOW TRUE PROJECTION
+
 
 def plot_results(u_errors, col, sig):
     """Plot the three error types."""
@@ -165,18 +163,15 @@ def plot_results(u_errors, col, sig):
         axs[i, col].errorbar(
             N_vec, ui, yerr=u_errors[1][i], fmt='.',
             label=r'$\mathcal{E}(\tilde{\bm{u}}$'
-                  rf'$_{i+1};$'
-                  r'$\bm{u}$'
-                  fr'$_{i+1}^*)$',
-            color=colors[i])
-        axs[i, col].plot(N_vec_large, u_errors[2][i],
-                         label=r'$\mathcal{E}_{noisy}(\bm{u}$'
-                               fr'$_{i+1}^*$)',
-                         color=colors[i], linestyle='dashed')
-        axs[i, col].plot(N_vec_large, u_errors[4][i],
-                         label=r'$\mathcal{E}_{theory}(\bm{u}$'
-                               fr'$_{i+1}^*$)',
-                         color=colors[i], linestyle='dotted')
+            rf'$_{i+1};$'
+            r'$\bm{u}$'
+            fr'$_{i+1}^*)$', color=colors[i])
+        axs[i, col].plot(
+            N_vec_large, u_errors[2][i], label=r'$\mathcal{E}_{noisy}(\bm{u}$'
+            fr'$_{i+1}^*$)', color=colors[i], linestyle='dashed')
+        axs[i, col].plot(
+            N_vec_large, u_errors[4][i], label=r'$\mathcal{E}_{theory}(\bm{u}$'
+            fr'$_{i+1}^*$)', color=colors[i], linestyle='dotted')
 
 
 # %% Obtain smoothing results for the 10 simulations
@@ -184,8 +179,9 @@ def plot_results(u_errors, col, sig):
 u_errors_a = {}
 u_errors_b = {}
 u_errors_c = {}
-seed_vec = [991992, 102488, 793759, 807345, 948548, 802870, 818898,
-            909001, 491821]
+seed_vec = [
+    991992, 102488, 793759, 807345, 948548, 802870, 818898, 909001, 491821
+]
 for j, nu in enumerate(nu_vec):
     sig = np.sqrt(nu)
     u_errors_a[j] = get_error_with_increasing_N(
@@ -196,7 +192,6 @@ for j, nu in enumerate(nu_vec):
     u_errors_c[j] = get_error_with_increasing_N(
         nu, N_vec, seed_vec, use_actual_P=False, alpha=alpha,
         max_iter=max_iter, center_Theta=center_Theta)
-
 
 # %%
 fig, axs = plt.subplots(m, 3)
@@ -232,7 +227,6 @@ for j in range(3):
         axs[i, j].get_shared_x_axes().join(axs[m - 1, j], axs[i, j])
         axs[i, j].xaxis.set_ticklabels([])
 
-
 # Set up shared y-axes
 for j in range(1, 3):
     for i in range(m):
@@ -245,18 +239,15 @@ if system == '4':
 
 # axs[0, 2].set_ylim([10**-4, 10**-1])
 
-
 axs[0, 0].set_title(r'$\tilde{\bm{u}}=P_{\Phi^*}\bm{u}$')
 axs[0, 1].set_title(r'$\tilde{\bm{u}}=P_{\Phi}\bm{u}$')
-axs[0, 2].set_title(
-    r'$\tilde{\bm{u}}={\tt IterPSDN}(\alpha=$'
-    f'{alpha})')
+axs[0, 2].set_title(r'$\tilde{\bm{u}}={\tt IterPSDN}(\alpha=$'
+                    f'{alpha})')
 # for j in range(3):
 #     axs[0, j].title.set_size(10)
 
 for i in range(m):
     axs[i, 0].legend()
-
 
 # Lines, Labels = axs[0, 0].get_legend_handles_labels()
 # idx = np.argsort(Labels)
@@ -272,7 +263,6 @@ plt.savefig(f'{out_dir}/{out_file}', pad_inches=0)
 fig.show()
 
 # %%
-import pickle
 with open(f'{out_dir}/{out_file[:-4]}_a.pkl', 'wb') as fh:
     pickle.dump(u_errors_a, fh)
 with open(f'{out_dir}/{out_file[:-4]}_b.pkl', 'wb') as fh:
@@ -297,8 +287,7 @@ for N in N_vec2:
     t = np.linspace(0, ttrain, num=N)
     A = utils.get_discrete_integral_matrix(t)
     u, u_actual, du_actual, c_actual = sys.setup_system(
-        t, nu, d, system[0], sys_params=sys_params, u0=u0,
-        seed=1)
+        t, nu, d, system[0], sys_params=sys_params, u0=u0, seed=1)
 
     Theta_actual = mlu.make_Theta(u_actual, d=d)
     Theta = mlu.make_Theta(u, d=d)
@@ -340,8 +329,7 @@ seed = 998711
 Thetas = []
 for i in range(n_rep):
     u, u_actual, du_actual, c_actual = sys.setup_system(
-        t, nu, d, system[0], sys_params=sys_params, u0=u0,
-        seed=seed)
+        t, nu, d, system[0], sys_params=sys_params, u0=u0, seed=seed)
     Theta_temp = mlu.make_Theta(u, d=d)
     Theta = mlu.center_Theta(Theta_temp, d, m, nu)
     Thetas.append(Theta)

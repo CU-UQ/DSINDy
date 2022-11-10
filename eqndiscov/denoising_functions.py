@@ -6,11 +6,12 @@ from sklearn.gaussian_process.kernels import RBF, WhiteKernel
 import plotly.graph_objects as go
 import plotly.io as pio
 import warnings
-pio.renderers.default = 'notebook+plotly_mimetype'
-warnings.filterwarnings('ignore')
-
 import eqndiscov.monomial_library_utils as mlu
 import eqndiscov.utils as utils
+from cvxopt import matrix, solvers
+
+pio.renderers.default = 'notebook+plotly_mimetype'
+warnings.filterwarnings('ignore')
 
 
 def smooth_data(t, u):
@@ -104,7 +105,7 @@ def projection_denoising(u, u_actual, d, sigma_estimate, A, max_iter=10,
                 if sum(update) == 0:
                     print('WARNING: HIT MAX SIGMA')
                     break
-                # If varaince too large don't perform projection in that direction
+                # If varaince too large don't perform projection
                 u_proj_new[update == 0, :] = u_proj[update == 0, :]
 
         if np.max(utils.rel_err(u_proj_new, u_proj)) < 1e-8:
@@ -146,9 +147,6 @@ def projection_denoising(u, u_actual, d, sigma_estimate, A, max_iter=10,
         fig.show()
 
     return u_proj, la.cond(Phi)
-
-
-from cvxopt import matrix, solvers
 
 
 def solve_socp(u, B):

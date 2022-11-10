@@ -22,8 +22,8 @@ def plot_smooth_states(u1, u2, u_noise, u_actual):
     m = np.size(u1, 0)
     for i in range(m):
         fig = go.Figure(layout_title_text=f'u{i+1} results')
-        fig.add_trace(go.Scatter(y=u_noise[i], name='Noisy data',
-                                 mode='markers'))
+        fig.add_trace(
+            go.Scatter(y=u_noise[i], name='Noisy data', mode='markers'))
         fig.add_trace(go.Scatter(y=u1[i], name='Projection method'))
         fig.add_trace(go.Scatter(y=u2[i], name='Gaussian Process'))
         fig.add_trace(go.Scatter(y=u_actual[i], name='Actual'))
@@ -33,19 +33,20 @@ def plot_smooth_states(u1, u2, u_noise, u_actual):
     # Plot the error
     for i in range(m):
         fig = go.Figure(layout_title_text=f'u{i+1} error results')
-        fig.add_trace(go.Scatter(
-            y=u1[i] - u_actual[i], name='Projection method'))
-        fig.add_trace(go.Scatter(
-            y=u2[i] - u_actual[i], name='Gaussian Process'))
+        fig.add_trace(
+            go.Scatter(y=u1[i] - u_actual[i], name='Projection method'))
+        fig.add_trace(
+            go.Scatter(y=u2[i] - u_actual[i], name='Gaussian Process'))
         fig.update_layout(width=600, height=400)
         fig.show()
 
 
 # SOCP RESULTS
 
+
 def print_socp_residuals(u, u_noise, du, du_actual, A, nu):
     """Print residuals following SOCP optimization."""
-    N = np.size(du) - 1  # Don't include initial condition
+    N = np.size(du) - 1         # Don't include initial condition
     C = 1 / np.sqrt(N)
     print('----Solution Residual ||A udot - u_proj||----')
     for i in range(2):
@@ -71,8 +72,7 @@ def plot_states(u, u_noise, u_socp, u_actual):
         fig = go.Figure(layout_title_text=f'u{i+1} results')
         fig.add_trace(go.Scatter(y=u_noise[i], name='Noisy data'))
         fig.add_trace(go.Scatter(y=u[i], name='Before optimization'))
-        fig.add_trace(go.Scatter(y=u_socp[i],
-                                 name='After optimization'))
+        fig.add_trace(go.Scatter(y=u_socp[i], name='After optimization'))
         fig.add_trace(go.Scatter(y=u_actual[i], name='Actual'))
         fig.update_layout(width=600, height=400)
         fig.show()

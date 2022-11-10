@@ -1,4 +1,3 @@
-
 """Generate noise realizations and smoothed results for given ODE systems.
 
 Possible ODE systems include:
@@ -13,31 +12,30 @@ results are saved to .csv file.
 """
 
 import os
-import sys
 import random
 import numpy as np
 import numpy.linalg as la
 import pandas as pd
 
-sys.path.append('/app/')
 import eqndiscov.denoising_functions as df
-import eqndiscov.ODE_systems as sys
+import eqndiscov.ODE_systems as odesys
 import eqndiscov.utils as utils
 import plotly.graph_objects as go
 
+
 def run_replications(system, N, ttrain, start=0, add_to_file=False,
-                     find_gp=True, replications=20):
+                     find_gp=True, replications=20, bdir='/app/'):
     """Smoothing noise replications."""
     # Number of sample replications
     max_iter = 1000
     alpha = 0.1
-    outdir = '/app/current_output/smoothed_noise_realizations/'
+    outdir = f'{bdir}/current_output/smoothed_noise_realizations/'
     if system[0] == '2':
-        indir = '/app/paper_noise_realizations/Duffing/'
+        indir = f'{bdir}/paper_noise_realizations/Duffing/'
     if system[0] == '3':
-        indir = '/app/paper_noise_realizations/Van_der_Pol/'
+        indir = f'{bdir}/paper_noise_realizations/Van_der_Pol/'
     if system[0] == '4':
-        indir = '/app/paper_noise_realizations/Rossler/'
+        indir = f'{bdir}/paper_noise_realizations/Rossler/'
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -46,26 +44,37 @@ def run_replications(system, N, ttrain, start=0, add_to_file=False,
     # nu_vec = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1]
     nu_vec = [0.0001, 0.01]
 
-    if system == '2a' and N == 1000 and ttrain == 10: rand_seed = 991182
-    if system == '2b' and N == 250 and ttrain == 10: rand_seed = 688871
-    if system == '2b' and N == 500 and ttrain == 10: rand_seed = 299823
-    if system == '2b' and N == 1000 and ttrain == 10: rand_seed = 280011
-    if system == '2b' and N == 2000 and ttrain == 10: rand_seed = 221011
-    if system == '2b' and N == 4000 and ttrain == 10: rand_seed = 209909
-    if system == '2b' and N == 8000 and ttrain == 10: rand_seed = 219029
-    if system == '2c' and N == 1000 and ttrain == 30: rand_seed = 280011
+    if system == '2a' and N == 1000 and ttrain == 10:
+        rand_seed = 991182
+    if system == '2b' and N == 250 and ttrain == 10:
+        rand_seed = 688871
+    if system == '2b' and N == 500 and ttrain == 10:
+        rand_seed = 299823
+    if system == '2b' and N == 1000 and ttrain == 10:
+        rand_seed = 280011
+    if system == '2b' and N == 2000 and ttrain == 10:
+        rand_seed = 221011
+    if system == '2b' and N == 4000 and ttrain == 10:
+        rand_seed = 209909
+    if system == '2b' and N == 8000 and ttrain == 10:
+        rand_seed = 219029
+    if system == '2c' and N == 1000 and ttrain == 30:
+        rand_seed = 280011
 
-    if system == '3' and N == 1000 and ttrain == 10: rand_seed = 366765
+    if system == '3' and N == 1000 and ttrain == 10:
+        rand_seed = 366765
 
-    if system == '4' and N == 1000 and ttrain == 10: rand_seed = 464570
-    if system == '4' and N == 2000 and ttrain == 10: rand_seed = 403611
+    if system == '4' and N == 1000 and ttrain == 10:
+        rand_seed = 464570
+    if system == '4' and N == 2000 and ttrain == 10:
+        rand_seed = 403611
 
     # Set random seeds for system
     random.seed(rand_seed)
     seed_vec = [random.randint(0, 1e6) for i in range(len(nu_vec))]
 
     # Set up system
-    sys_params, u0, p = sys.get_system_values(system)
+    sys_params, u0, p = odesys.get_system_values(system)
 
     # Iterate through noise values, find noise realization, perform smoothing
     for run_noise_level in range(np.size(nu_vec)):
@@ -91,7 +100,7 @@ def run_replications(system, N, ttrain, start=0, add_to_file=False,
 
         for j in range(start, start + replications):
             # Find noisy/actual measurements and actual derivative/coef vector
-            u, u_actual, du_actual, c_actual = sys.setup_system(
+            u, u_actual, du_actual, c_actual = odesys.setup_system(
                 t, nu, p, system[0], sys_params=sys_params, u0=u0,
                 seed=seed + j)
 
@@ -120,11 +129,11 @@ def run_replications(system, N, ttrain, start=0, add_to_file=False,
 
             # Projection-based smoothing
             A = utils.get_discrete_integral_matrix(t)
-            u_proj = df.projection_denoising(
-                u, u_actual, p, sigma_estimate, A,
-                alpha=alpha, max_iter=max_iter, plot=True,
-                use_actual_P=False, center_Theta=True,
-                check_diverge=check_diverge)[0]
+            u_proj = df.projection_denoising(u, u_actual, p, sigma_estimate, A,
+                                             alpha=alpha, max_iter=max_iter,
+                                             plot=True, use_actual_P=False,
+                                             center_Theta=True,
+                                             check_diverge=check_diverge)[0]
 
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=t, y=u_proj[0]))
@@ -149,66 +158,74 @@ def run_replications(system, N, ttrain, start=0, add_to_file=False,
         # outfn = f'{outdir}/system={system}_ttrain={ttrain}_N={N}_nu={nu}.csv'
         data_all.to_csv(outfn, index=False)
 
-# %% Generate smoothed data for each system
 
+# %% Generate smoothed data for each system
 
 # For running additional simulations
 start = 0
 add_to_file = False
+bdir = '/app/'
 
 system = '2a'
-N = 1000  # Number of samples
-ttrain = 10  # Training time
+N = 1000        # Number of samples
+ttrain = 10     # Training time
+
 run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
-                 replications=10)
+                 replications=10, bdir=bdir)
 
 system = '2b'
-N = 250  # Number of samples
-ttrain = 10  # Training time
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file)
+N = 250         # Number of samples
+ttrain = 10     # Training time
+
+run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+                 bdir=bdir)
 
 system = '2b'
-N = 500  # Number of samples
-ttrain = 10  # Training time
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file)
+N = 500         # Number of samples
+ttrain = 10     # Training time
+
+run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+                 bdir=bdir)
 
 system = '2b'
-N = 1000  # Number of samples
-ttrain = 10  # Training time
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file)
+N = 1000        # Number of samples
+ttrain = 10     # Training time
+
+run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+                 bdir=bdir)
 
 system = '2b'
-N = 2000  # Number of samples
-ttrain = 10  # Training time
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file)
+N = 2000        # Number of samples
+ttrain = 10     # Training time
+
+run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+                 bdir=bdir)
 
 system = '2b'
-N = 4000  # Number of samples
-ttrain = 10  # Training time
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file)
+N = 4000        # Number of samples
+ttrain = 10     # Training time
+
+run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+                 bdir=bdir)
 
 # For this sample size don't perform Gaussian process regression, too slow
 system = '2b'
-N = 8000  # Number of samples
-ttrain = 10  # Training time
-run_replications(system, N, ttrain, start=0, find_gp=False, replications=30)
+N = 8000        # Number of samples
+ttrain = 10     # Training time
 
-# system = '2c'
-# N = 1000  # Number of samples
-# ttrain = 30  # Training time
-# run_replications(system, N, ttrain, start=start)
+run_replications(system, N, ttrain, start=0, find_gp=False, replications=30,
+                 bdir=bdir)
 
 system = '3'
-N = 1000  # Number of samples
-ttrain = 10  # Training time
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file)
+N = 1000        # Number of samples
+ttrain = 10     # Training time
+
+run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+                 bdir=bdir)
 
 system = '4'
-N = 1000  # Number of samples
-ttrain = 10  # Training time
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file)
+N = 1000        # Number of samples
+ttrain = 10     # Training time
 
-# system = '4'
-# N = 2000  # Number of samples
-# ttrain = 10  # Training time
-# run_replications(system, N, ttrain, start=start)
+run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+                 bdir=bdir)

@@ -14,10 +14,12 @@ import eqndiscov.utils as utils
 
 def reset_mosek_params():
     """Run to reset optimization parameters."""
-    solvers.options['mosek'] = {iparam.log: 0,
-                                dparam.intpnt_co_tol_pfeas: 1e-10,
-                                dparam.intpnt_co_tol_dfeas: 1e-10,
-                                dparam.intpnt_co_tol_infeas: 1e-10}
+    solvers.options['mosek'] = {
+        iparam.log: 0,
+        dparam.intpnt_co_tol_pfeas: 1e-10,
+        dparam.intpnt_co_tol_dfeas: 1e-10,
+        dparam.intpnt_co_tol_infeas: 1e-10
+    }
 
 
 def increase_mosek_tol():
@@ -25,14 +27,16 @@ def increase_mosek_tol():
     old_ptol = solvers.options['mosek'][dparam.intpnt_co_tol_pfeas]
     old_dtol = solvers.options['mosek'][dparam.intpnt_co_tol_dfeas]
     old_infeas = solvers.options['mosek'][dparam.intpnt_co_tol_infeas]
-    solvers.options['mosek'] = {iparam.log: 0,
-                                dparam.intpnt_co_tol_pfeas: old_ptol * 10,
-                                dparam.intpnt_co_tol_dfeas: old_dtol * 10,
-                                dparam.intpnt_co_tol_infeas: old_infeas * 10}
+    solvers.options['mosek'] = {
+        iparam.log: 0,
+        dparam.intpnt_co_tol_pfeas: old_ptol * 10,
+        dparam.intpnt_co_tol_dfeas: old_dtol * 10,
+        dparam.intpnt_co_tol_infeas: old_infeas * 10
+    }
 
 
-def deriv_tik_reg(t, u, udot, title='', plot=False,
-                  alpha=None, opt_params=None):
+def deriv_tik_reg(t, u, udot, title='', plot=False, alpha=None,
+                  opt_params=None):
     """Approximate derivative from states using Tikhonov regularization."""
     A = utils.get_discrete_integral_matrix(t)
     D = utils.get_derivative_matrix(t)
@@ -47,8 +51,7 @@ def deriv_tik_reg(t, u, udot, title='', plot=False,
     return deriv
 
 
-def run_socp_optimization(u, A, B, D, W, args,
-                          opt_params=None, start=None):
+def run_socp_optimization(u, A, B, D, W, args, opt_params=None, start=None):
     """Iteratively run SOCP based optimization."""
     B_new = np.copy(B)
     p = np.size(W, 0)
@@ -60,8 +63,8 @@ def run_socp_optimization(u, A, B, D, W, args,
         for j in range(5):
             try:
                 alpha = lcu.findAlphaMaxCurve(
-                    A, u, f'SOCP L curve: Iteration {i+1}', method='SOCP',
-                    D=D, B=B_new, y2=args, plot_results=True,
+                    A, u, f'SOCP L curve: Iteration {i+1}', method='SOCP', D=D,
+                    B=B_new, y2=args, plot_results=True,
                     opt_params=opt_params)[0]
                 break
             except Exception as ex:
@@ -70,13 +73,13 @@ def run_socp_optimization(u, A, B, D, W, args,
                 ex = eval(str(ex))
 
                 if str(ex['name']) == 'Too large':
-                    # a_max_new = opt_params['a_max'] / 2
-                    a_max_new = ex['alpha'] / 1.1
+                    a_max_new = opt_params['a_max'] / 2
+                    # a_max_new = ex['alpha'] / 1.1
                     print(f'Decreasing a_max to {a_max_new}')
                     opt_params['a_max'] = a_max_new
                 if str(ex['name']) == 'Too small':
-                    # a_min_new = opt_params['a_min'] * 2
-                    a_min_new = ex['alpha'] * 1.1
+                    a_min_new = opt_params['a_min'] * 2
+                    # a_min_new = ex['alpha'] * 1.1
                     print(f'Increasing a_min to {a_min_new}')
                     opt_params['a_min'] = a_min_new
                 # if str(ex) == 'Both':
@@ -106,7 +109,7 @@ def run_socp_optimization(u, A, B, D, W, args,
         B_new = Dc @ B
     print('Final coefs:')
     print(c_old)
-    return(x)
+    return (x)
 
 
 def run_weighted_lasso(A, y, W, method='1', show_L_curve=False,
@@ -117,8 +120,7 @@ def run_weighted_lasso(A, y, W, method='1', show_L_curve=False,
     for i in range(opt_params['max_IRW_iter']):
         alpha_final = lcu.findAlphaMaxCurve(
             A @ W2_inv, y, f'L curve for {type} system ({species}).',
-            plot_results=show_L_curve, method='1', opt_params=opt_params
-            )[0]
+            plot_results=show_L_curve, method='1', opt_params=opt_params)[0]
         las = lm.Lasso(alpha=alpha_final, fit_intercept=False,
                        tol=opt_params['tol'], max_iter=opt_params['max_iter'])
         las.fit(A @ W2_inv, y)
@@ -131,10 +133,10 @@ def run_weighted_lasso(A, y, W, method='1', show_L_curve=False,
 
         W2 = np.diag(1 / (np.abs(cW) + 1e-4 * np.max(np.abs(cW))))
         W2_inv = la.inv(W2)
-        show_L_curve = False  # Only show L-curve for first iteration
+        show_L_curve = False    # Only show L-curve for first iteration
     print('Final coefs:')
     print(c_old)
-    return(c_old)
+    return (c_old)
 
 
 def solve_socp(y, y2, A, B, D, alpha, B_subs=None, P_subs=None,
@@ -163,25 +165,22 @@ def solve_socp(y, y2, A, B, D, alpha, B_subs=None, P_subs=None,
     sD = np.size(D, 0)
 
     c = matrix(np.hstack((np.zeros(m), np.ones(sB))))
-    Gl = matrix(np.vstack((
-        np.hstack((np.zeros(sB).reshape(-1, 1), B, -np.eye(sB))),
-        np.hstack((np.zeros(sB).reshape(-1, 1), -B, -np.eye(sB)))
-        )))
+    Gl = matrix(
+        np.vstack((np.hstack((np.zeros(sB).reshape(-1, 1), B, -np.eye(sB))),
+                   np.hstack((np.zeros(sB).reshape(-1, 1), -B, -np.eye(sB))))))
     hl = matrix(np.zeros(2 * sB))
 
     # ||D udot|| < C
-    Gq1 = matrix(np.vstack((
-        np.zeros(m + sB),
-        np.hstack((np.zeros(sD).reshape(-1, 1), D, np.zeros((sD, sB))))
-        )))
+    Gq1 = matrix(
+        np.vstack((np.zeros(m + sB),
+                   np.hstack((np.zeros(sD).reshape(-1, 1), D, np.zeros(
+                       (sD, sB)))))))
     hq1 = matrix(np.hstack((np.sqrt(N) * y2, np.zeros(sD))))
     # hq1 = matrix(np.hstack((np.sqrt(N) * alpha, np.zeros(sD))))
 
     # ||[1 A]udot - utilde|| < alpha
-    Gq2 = matrix(np.vstack((
-        np.zeros(m + sB),
-        np.hstack((A, np.zeros((N, sB))))
-        )))
+    Gq2 = matrix(
+        np.vstack((np.zeros(m + sB), np.hstack((A, np.zeros((N, sB)))))))
     hq2 = matrix(np.hstack((np.sqrt(N) * alpha, y)))
     # hq2 = matrix(np.hstack((np.sqrt(N) * y2, y)))
 
@@ -200,12 +199,11 @@ def solve_socp(y, y2, A, B, D, alpha, B_subs=None, P_subs=None,
         # print(sol)
         if sol['x'] is not None:
             if return_sol:
-                return(sol)
+                return (sol)
 
             x = np.array(sol['x']).flatten()[:m]
-            resres = np.linalg.norm(np.hstack((
-                np.zeros(sB).reshape(-1, 1), B
-                )) @ x, 1)
+            resres = np.linalg.norm(
+                np.hstack((np.zeros(sB).reshape(-1, 1), B)) @ x, 1)
             solres = np.linalg.norm(A @ x - y, 2)
             # solres = np.linalg.norm(D @ x[1:], 2)
 
@@ -221,7 +219,7 @@ def solve_socp(y, y2, A, B, D, alpha, B_subs=None, P_subs=None,
                     print(f'Current alpha: {alpha}')
                     raise Exception(ex_dict)
 
-            return(x, solres, resres)
+            return (x, solres, resres)
 
         # If optimization has not suceedeed, change bounds on both max/min
         # alpha.

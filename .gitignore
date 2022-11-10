@@ -1,7 +1,9 @@
 docker-compose.yml
 Dockerfile
 *~
-
+/DSINDy.egg-info
+/current_output
+/eqndiscov/__pycache__
 /output/*
 !/output/paper_noise_realizations
 

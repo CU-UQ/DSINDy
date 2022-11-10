@@ -38,7 +38,7 @@ def get_coefficient_vector(system, sys_params, m, p):
         c[2, 0] = beta
         c[2, 3] = -kappa
         c[2, 6] = 1
-    return(c)
+    return (c)
 
 
 def setup_system(t, nu, d, system, sys_params=None, u0=[0, 1], seed=123456):
@@ -71,8 +71,8 @@ def setup_system(t, nu, d, system, sys_params=None, u0=[0, 1], seed=123456):
     c = get_coefficient_vector(system, sys_params, m, p=p)
 
     # Find the true solution and derivative
-    out = solve_ivp(run_monomial_ode, [0, t[-1]], u0,
-                    args=[c, d], t_eval=t, rtol=1e-12, atol=1e-12)
+    out = solve_ivp(run_monomial_ode, [0, t[-1]], u0, args=[c, d], t_eval=t,
+                    rtol=1e-12, atol=1e-12)
     u_actual = out.y
     Theta = mlu.make_Theta(u_actual, d=d)
     udot_actual = (Theta @ c.T).T
@@ -111,7 +111,7 @@ def get_system_values(system):
         u0 = [0, -5, 0]
         d = 2
 
-    return(sys_params, u0, d)
+    return (sys_params, u0, d)
 
 
 def run_monomial_ode(t, u, c, d):

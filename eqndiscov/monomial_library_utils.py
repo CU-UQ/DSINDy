@@ -60,9 +60,7 @@ def center_Theta(Theta, d, m, nu):
             exp_eps = 1
             for ii, k in enumerate(k_vec):
                 const *= ncr(K_vec[ii], k)
-                exp_eps *= np.prod(
-                    range(k - 1, 0, -2)
-                    ) * nu_vec[ii]**(k / 2)
+                exp_eps *= np.prod(range(k - 1, 0, -2)) * nu_vec[ii]**(k / 2)
 
             j = np.where(np.all(mi_mat == K_vec - k_vec, axis=1))[0][0]
 
@@ -70,7 +68,7 @@ def center_Theta(Theta, d, m, nu):
 
         Theta_shifted[:, i] = Theta[:, i] - total_sum
 
-    return(Theta_shifted)
+    return (Theta_shifted)
 
 
 def make_M2(w_noise, w_tilde, d, nu):
@@ -130,14 +128,11 @@ def make_M2(w_noise, w_tilde, d, nu):
                 exp_eps = 1
                 for i, k in enumerate(k_vec):
                     const *= ncr(K_vec[i], k)
-                    exp_eps *= np.prod(
-                        range(k - 1, 0, -2)
-                        ) * nu_vec[i]**(k / 2)
-                mu_prev = M2[tuple(
-                    [j for j in J_vec] + [
-                        K_vec[i] - k_vec[i] for i in range(len(K_vec))
-                        ]
-                    )]
+                    exp_eps *= np.prod(range(k - 1, 0,
+                                             -2)) * nu_vec[i]**(k / 2)
+                mu_prev = M2[
+                    tuple([j for j in J_vec] +
+                          [K_vec[i] - k_vec[i] for i in range(len(K_vec))])]
                 total_sum += const * exp_eps * mu_prev
 
             # Add the unbiased moment to the moment matrix
@@ -146,7 +141,7 @@ def make_M2(w_noise, w_tilde, d, nu):
             prod2 = np.prod(w_noise**K_vec.reshape(-1, 1), axis=0)
             M2[tuple(idx)] = 1 / N * np.sum(prod1 * prod2) - total_sum
 
-    return(M2)
+    return (M2)
 
 
 def make_M(w_noise, d, nu):
@@ -205,12 +200,9 @@ def make_M(w_noise, d, nu):
             exp_eps = 1
             for i, k in enumerate(k_vec):
                 const *= ncr(K_vec[i], k)
-                exp_eps *= np.prod(
-                    range(k - 1, 0, -2)
-                    ) * nu_vec[i]**(k / 2)
-            mu_prev = M[tuple([
-                K_vec[i] - k_vec[i] for i in range(len(K_vec))
-                ])]
+                exp_eps *= np.prod(range(k - 1, 0, -2)) * nu_vec[i]**(k / 2)
+            mu_prev = M[tuple([K_vec[i] - k_vec[i]
+                               for i in range(len(K_vec))])]
             total_sum += const * exp_eps * mu_prev
 
         # Add the unbiased moment to the moment matrix
@@ -218,7 +210,7 @@ def make_M(w_noise, d, nu):
         prod = np.prod(w_noise**K_vec.reshape(-1, 1), axis=0)
         M[tuple(idx)] = 1 / N * np.sum(prod) - total_sum
 
-    return(M)
+    return (M)
 
 
 def make_G2_from_moments(M2):
@@ -239,7 +231,7 @@ def make_G2_from_moments(M2):
         for j, mi2 in enumerate(mi_mat):
             idx = [i for i in mi1] + [i for i in mi2]
             G2[i, j] = M2[tuple(idx)]
-    return(G2)
+    return (G2)
 
 
 def make_G_from_moments(M):
@@ -260,11 +252,10 @@ def make_G_from_moments(M):
         for j, mi2 in enumerate(mi_mat):
             idx = mi1 + mi2
             G[i, j] = M[tuple(idx)]
-    return(G)
+    return (G)
 
 
-def make_aPC(w, N, nu, wlearn=None, p=3, Q=0, x=None,
-             M=None, W=None):
+def make_aPC(w, N, nu, wlearn=None, p=3, Q=0, x=None, M=None, W=None):
     """Create the library of aPC polynomials up to degree p."""
     # TODO: This function shouldn't go here, and needs to be debugged
     d = np.size(w, 0)
@@ -292,8 +283,7 @@ def make_aPC(w, N, nu, wlearn=None, p=3, Q=0, x=None,
                     tot_sum += W[k, ell] * mu
                 C[j, k] = 1 / Phi_sq[k] * tot_sum
             Phi_sq[j] = M[2 * alpha_j[0], 2 * alpha_j[1]] - np.sum(
-                C[j, :j]**2 * Phi_sq[:j]
-                )
+                C[j, :j]**2 * Phi_sq[:j])
             if Phi_sq[j] < 0:
                 Phi_sq[j] = 1
             # Set coefficients
@@ -322,7 +312,7 @@ def make_aPC(w, N, nu, wlearn=None, p=3, Q=0, x=None,
 def get_basis_size(m, d):
     """Get basis size of system with m states and maximum degree d."""
     p = int(sps.factorial(m + d) / (sps.factorial(m) * sps.factorial(d)))
-    return(p)
+    return (p)
 
 
 def make_mi_mat(m, d):
@@ -349,7 +339,7 @@ def make_mi_mat(m, d):
             mi_matrix_p = make_mi_mat_p(m, current_order, used_rows)
             mi_matrix[row:row + used_rows, :] = mi_matrix_p
             row += used_rows
-    return(mi_matrix)
+    return (mi_matrix)
 
 
 def make_mi_mat_p(m, d, rows):

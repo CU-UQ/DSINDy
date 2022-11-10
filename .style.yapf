@@ -1,0 +1,5 @@
+[style]
+based_on_style = pep8
+spaces_before_comment = 1, 8, 17, 25
+split_before_named_assigns = False
+split_all_top_level_comma_separated_values = False
