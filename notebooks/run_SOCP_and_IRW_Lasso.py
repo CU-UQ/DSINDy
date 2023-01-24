@@ -28,8 +28,8 @@ import warnings
 import plotly.io as pio
 import multiprocessing
 import time
+import matplotlib.pyplot as plt
 
-sys.path.append('/home/jacqui/projects/EqnDiscov/')
 import eqndiscov.monomial_library_utils as mlu
 import eqndiscov.plotting_functions as pf
 import eqndiscov.ODE_systems as odesys
@@ -40,13 +40,10 @@ import eqndiscov.optim_problems as op
 pio.renderers.default = 'notebook+plotly_mimetype'
 warnings.filterwarnings('ignore')
 
-import importlib
-
-importlib.reload(utils)
 # %% tags=["remove_input"]
 
 # Load arguments
-bdir = '/home/jacqui/DSINDy/'
+bdir = '/home/jacqui/projects/DSINDy/'
 with open(f'{bdir}/arguments.json', 'r') as fid:
     arguments = json.load(fid)
 
@@ -65,11 +62,12 @@ if N == 8000:
     get_GP = False
 # %% tags=["remove_cell"]
 # For Testing
+bdir = '/home/jacqui/projects/DSINDy/'
 nu = 0.01       # noise level (variance)
 system = '2b'
-N = 4000        # number of samples
+N = 1000        # number of samples
 ttrain = 10     # training time
-realization = 11
+realization = 7
 datadir = f'{bdir}/paper_noise_realizations/Duffing/'
 get_GP = True
 
@@ -79,6 +77,7 @@ get_GP = True
 """
 
 # %%
+description = f'system={system}_N={N}_nu={nu}_realization={realization}'
 sys_params, u0, d = odesys.get_system_values(system)
 tend = ttrain * 2       # testing time (includes initial trianing)
 tstep = 0.01            # step size for running ODE
@@ -92,9 +91,9 @@ N_end = int(N * (1 - perc_trun))
 t = np.linspace(0, ttrain, num=N)
 
 # Find actual measurements/derivative/coef vector
-u, u_actual, du_actual, c_actual = sys.setup_system(t, nu, d, system[0],
-                                                    sys_params=sys_params,
-                                                    u0=u0)
+u, u_actual, du_actual, c_actual = odesys.setup_system(t, nu, d, system[0],
+                                                       sys_params=sys_params,
+                                                       u0=u0)
 
 # Replace noisy and smoothed data for given realization
 data_fn = f'{datadir}/system={system}_ttrain={ttrain}_N={N}_nu={nu}.csv'
@@ -127,13 +126,11 @@ utils.disp_table(
 if get_GP:
     pf.plot_smooth_states(u_proj, u_smooth, u, u_actual)
 
-# %%
-
-import matplotlib.pyplot as plt
+# %% Plot of state+noise for presentation
 
 cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
 # Presentation figure
-for i in range(2):
+for i in range(m):
     plt.plot(t, u[i], '.', label='Measurements')
     plt.plot(t, u_actual[i], label='Actual', color=cols[3])
     plt.xlim([0, 10])
@@ -141,9 +138,7 @@ for i in range(2):
     plt.ylabel(fr'$u_{i+1}$')
     plt.xlabel(r'$t$')
     plt.legend()
-    nm = f'system={system}_ttrain={ttrain}_N={N}_nu={nu}_u{i+1}.pdf'
-    plt.savefig(
-        f'/home/jacqui/projects/EqnDiscov/output/presentation_figs/{nm}')
+    plt.savefig(f'{bdir}/output/presentation_figs/{description}_u{i+1}.pdf')
     plt.show()
 
 # %% [markdown]
@@ -267,9 +262,6 @@ print(f'Actual smoothness of du: {C_actual}')
 """
 
 # %%
-import importlib
-
-importlib.reload(op)
 
 startTime = time.time()
 
@@ -434,14 +426,14 @@ utils.disp_table(
 t_test = np.arange(0, tend * 1.0001, tstep)
 idx_end_train = np.where(t_test == ttrain)[0][0]
 
-out = solve_ivp(sys.run_monomial_ode, [0, t_test[-1]], u0, args=[c_actual, d],
-                t_eval=t_test, rtol=1e-12, atol=1e-12)
+out = solve_ivp(odesys.run_monomial_ode, [0, t_test[-1]], u0,
+                args=[c_actual, d], t_eval=t_test, rtol=1e-12, atol=1e-12)
 u_actual_test = out.y
 
 
 def run_ode(q, tend, u0, c, d, t_test):
     """Function to run ode as separate process."""
-    out = solve_ivp(sys.run_monomial_ode, [0, tend], u0, args=[c, d],
+    out = solve_ivp(odesys.run_monomial_ode, [0, tend], u0, args=[c, d],
                     t_eval=t_test, rtol=1e-12, atol=1e-12)
     q.put(out)
 
@@ -517,58 +509,40 @@ for i in range(m):
     fig1.add_trace(go.Scatter(x=t_test, y=u_actual_test[i], name='Actual'))
     fig1.update_layout(title_text=f'Simulation Results (u{i+1})', width=600,
                        height=400)
-    fig1.update_xaxes(title_text='Time') # range=[0,15])
+    fig1.update_xaxes(title_text='Time')
     fig1.update_yaxes(title_text=f'u{i+1}')
     fig1.show()
-                                         # fig1.write_image('/app/current_output/Sim_u'+str(i+1)+'.pdf')
 
     fig2.update_layout(title_text=f'Prediction Error (u{i+1})', width=600,
                        height=400)
     fig2.update_xaxes(title_text='Time')
     fig2.update_yaxes(title_text=f'u{i+1}')
     fig2.show()
-    # fig2.write_image('/app/current_output/PredErr_u'+str(i+1)+'.pdf')
 
 # %%
 
-import matplotlib.pyplot as plt
-# Presentation figure
+# # Pull in values from weak sindy
+
+# # Values for system=2b, N=1000, nu=0.01, realization=7
+# c1_WSINDY = np.array(
+#     [0, 0, 0.991728193300835, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+# c2_WSINDY = np.array([
+#     -0.336191693, 0.73528806, 0, 0, -0.601285429, 1.705789569, -2.603538184,
+#     -0.46098231, -1.946309106, 0, 1.007476692, 0.850158343, 0, 0.63016903,
+#     -1.219972351
+# ])
+
+# c_WSINDY = np.vstack((c1_WSINDY, c2_WSINDY))
+# c_WSINDY.shape
+# que = multiprocessing.Queue()
+# pro = multiprocessing.Process(target=run_ode, name="Run_ODE",
+#                               args=(que, tend, u0, c_WSINDY, d, t_test))
+# pro.start()
+
+# sol_dict['WSINDy'] = que.get()
+# %%
 
 for i in range(m):
-    fig1 = go.Figure()
-    fig2 = go.Figure()
-    for key, val in sol_dict.items():
-        if sol_dict[key] == 'Failed':
-            continue
-        u_cur = val.y
-        n = np.size(u_cur, 1)
-        u_cur_err = u_cur - u_actual_test[:, :n]
-        fig1.add_trace(go.Scatter(x=t_test, y=u_cur[i], name=key))
-        fig2.add_trace(go.Scatter(x=t_test, y=u_cur_err[i], name=key))
-
-# %%
-
-c_actual
-c1_WSINDY = np.array(
-    [0, 0, 0.991728193300835, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-c2_WSINDY = np.array([
-    -0.336191693, 0.73528806, 0, 0, -0.601285429, 1.705789569, -2.603538184,
-    -0.46098231, -1.946309106, 0, 1.007476692, 0.850158343, 0, 0.63016903,
-    -1.219972351
-])
-c_WSINDY = np.vstack((c1_WSINDY, c2_WSINDY))
-c_WSINDY.shape
-que = multiprocessing.Queue()
-pro = multiprocessing.Process(target=run_ode, name="Run_ODE",
-                              args=(que, tend, u0, c_WSINDY, d, t_test))
-pro.start()
-
-sol_dict['WSINDy'] = que.get()
-# %%
-
-plt.rcParams["figure.figsize"]
-
-for i in range(2):
     plt.figure(figsize=(4, 2))
     for key, val in sol_dict.items():
         if key == 'socp_sm':
@@ -589,9 +563,8 @@ for i in range(2):
     plt.ylabel(fr'$u_{i+1}$')
     plt.xlabel(r'$t$')
     plt.legend(ncol=2)
-    nm = f'system={system}_ttrain={ttrain}_N={N}_nu={nu}_u{i+1}_pred.pdf'
-    plt.savefig(
-        f'/home/jacqui/projects/EqnDiscov/output/presentation_figs/{nm}')
+    nm = f'{description}_u{i+1}_pred.pdf'
+    plt.savefig(f'{bdir}/output/presentation_figs/{nm}')
     plt.show()
 # %% tags=["remove_input"]
 

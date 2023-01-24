@@ -1,4 +1,4 @@
-name: EqnDiscovEnv
+name: DSINDyEnv
 channels:
   - conda-forge
   - MOSEK
@@ -19,4 +19,4 @@ dependencies:
   - pip=22.0.4
   - pip:
     - sigfig==1.3.0
-    - --editable /home/jacqui/DSINDy/
+    - --editable /home/jacqui/projects/DSINDy/
