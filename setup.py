@@ -7,4 +7,4 @@ setup(name='DSINDy',
       description='DSINDy Code',
       author='Jacqui Wentz',
       author_email='jacqueline.wentz@colorado.edu',
-      packages=find_packages(include=['eqndiscov', 'eqndiscov.*']))
+      packages=find_packages(include=['dsindy', 'dsindy.*']))
