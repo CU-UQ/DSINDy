@@ -21,12 +21,12 @@ mpl.rc('text.latex', preamble=r'\usepackage{bm}')
 plt.rcParams['axes.autolimit_mode'] = "data"
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-plt.rc('font', size=10)         # controls default text size
-plt.rc('axes', titlesize=10)    # fontsize of the title
-plt.rc('axes', labelsize=10)    # fontsize of the x and y labels
-plt.rc('xtick', labelsize=8)    # fontsize of the x tick labels
-plt.rc('ytick', labelsize=8)    # fontsize of the y tick labels
-plt.rc('legend', fontsize=5)    # fontsize of the legend
+plt.rc('font', size=10)  # controls default text size
+plt.rc('axes', titlesize=10)  # fontsize of the title
+plt.rc('axes', labelsize=10)  # fontsize of the x and y labels
+plt.rc('xtick', labelsize=8)  # fontsize of the x tick labels
+plt.rc('ytick', labelsize=8)  # fontsize of the y tick labels
+plt.rc('legend', fontsize=5)  # fontsize of the legend
 
 # %% [markdown]
 """
@@ -71,7 +71,9 @@ def generate_df(nu_vec, N=1000, ttrain=10, system='2', reps=30):
             fn = f'{base_dir}/{base_fn}/{base_fn}_realization={i}.csv'
             if firstReal is False:
                 try:
-                    err_df = pd.read_csv(fn, header=None, index_col=[0],
+                    err_df = pd.read_csv(fn,
+                                         header=None,
+                                         index_col=[0],
                                          names=[i])
                     firstReal = True
                 except Exception:
@@ -79,9 +81,12 @@ def generate_df(nu_vec, N=1000, ttrain=10, system='2', reps=30):
                     continue
             else:
                 try:
-                    err_df_i = pd.read_csv(fn, header=None, index_col=[0],
+                    err_df_i = pd.read_csv(fn,
+                                           header=None,
+                                           index_col=[0],
                                            names=[i])
-                    err_df = err_df.merge(err_df_i, right_index=True,
+                    err_df = err_df.merge(err_df_i,
+                                          right_index=True,
                                           left_index=True)
                 # Print iteration if it doesn't exist (means it failed)
                 except Exception:
@@ -90,8 +95,8 @@ def generate_df(nu_vec, N=1000, ttrain=10, system='2', reps=30):
 
         n = np.size(err_df, 1)
 
-        err_df[err_df == -1] = 1        # None
-        err_df[err_df > 1] = 1          # None
+        err_df[err_df == -1] = 1  # None
+        err_df[err_df > 1] = 1  # None
 
         key_ends = ['_pred_socp_sm', '_pred_socp_theory', '_pred_lasso']
         for key_end in key_ends:
@@ -136,8 +141,18 @@ def generate_df(nu_vec, N=1000, ttrain=10, system='2', reps=30):
     return (df_mean, df_std, df_sem)
 
 
-def gen_plot(cols, dfs_mean, dfs_std, ylabel, N_vec, labels=None, fn='temp',
-             colors=None, swap=False, logy=True, include_std=True, ypad=4):
+def gen_plot(cols,
+             dfs_mean,
+             dfs_std,
+             ylabel,
+             N_vec,
+             labels=None,
+             fn='temp',
+             colors=None,
+             swap=False,
+             logy=True,
+             include_std=True,
+             ypad=4):
     """Function to generate plots of data-driven dynamics results."""
     if colors is None:
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -162,21 +177,29 @@ def gen_plot(cols, dfs_mean, dfs_std, ylabel, N_vec, labels=None, fn='temp',
             df2.rename(columns={
                 'index': 'sigma',
                 'value': 'std'
-            }, inplace=True)
+            },
+                       inplace=True)
             df1['std'] = df2['std']
 
         if i == 0:
             sig_vec = [0.01, 0.1, 1]
         for j, key in enumerate(cols):
             if include_std:
-                df1[df1['variable'] == key].plot('sigma', 'mean', yerr='std',
-                                                 label=labels[key], ax=axs[i],
-                                                 marker='.', color=colors[j],
+                df1[df1['variable'] == key].plot('sigma',
+                                                 'mean',
+                                                 yerr='std',
+                                                 label=labels[key],
+                                                 ax=axs[i],
+                                                 marker='.',
+                                                 color=colors[j],
                                                  linestyle=linetype[j])
             else:
-                df1[df1['variable'] == key].plot('sigma', 'mean',
-                                                 label=labels[key], ax=axs[i],
-                                                 marker='.', color=colors[j],
+                df1[df1['variable'] == key].plot('sigma',
+                                                 'mean',
+                                                 label=labels[key],
+                                                 ax=axs[i],
+                                                 marker='.',
+                                                 color=colors[j],
                                                  linestyle=linetype[j])
 
         if logy:
@@ -222,15 +245,20 @@ def gen_plot(cols, dfs_mean, dfs_std, ylabel, N_vec, labels=None, fn='temp',
             df1 = dfs_sig[i]
             for j, key in enumerate(cols):
                 if logy:
-                    df1[df1['variable'] == key].plot('N', 'mean', yerr='std',
+                    df1[df1['variable'] == key].plot('N',
+                                                     'mean',
+                                                     yerr='std',
                                                      label=labels[key],
-                                                     ax=axs[i], marker='.',
+                                                     ax=axs[i],
+                                                     marker='.',
                                                      color=colors[j],
                                                      linestyle=linetype[j])
                 else:
-                    df1[df1['variable'] == key].plot('N', 'mean',
+                    df1[df1['variable'] == key].plot('N',
+                                                     'mean',
                                                      label=labels[key],
-                                                     ax=axs[i], marker='.',
+                                                     ax=axs[i],
+                                                     marker='.',
                                                      color=colors[j],
                                                      linestyle=linetype[j])
             if logy:
@@ -246,7 +274,8 @@ def gen_plot(cols, dfs_mean, dfs_std, ylabel, N_vec, labels=None, fn='temp',
             axs[i].set_xticks([1000])
             axs[i].set_xticks([250, 500, 2000, 4000, 8000], minor=True)
             axs[i].set_xticklabels([1000], rotation=45)
-            axs[i].set_xticklabels([250, 500, 2000, 4000, 8000], minor=True,
+            axs[i].set_xticklabels([250, 500, 2000, 4000, 8000],
+                                   minor=True,
                                    rotation=45)
             for j in range(5):
                 axs[i].xaxis.get_minorticklabels()[j].set_y(-.02)
@@ -260,7 +289,8 @@ def gen_plot(cols, dfs_mean, dfs_std, ylabel, N_vec, labels=None, fn='temp',
                 axs[i].yaxis.set_major_locator(
                     LogLocator(base=10, numticks=100))
                 axs[i].yaxis.set_minor_locator(
-                    LogLocator(base=10, subs=np.arange(2, 10) * .1,
+                    LogLocator(base=10,
+                               subs=np.arange(2, 10) * .1,
                                numticks=100))
 
             axs[i].set_title(fr'$\sigma$={sig_vec[i]:.2f}')
@@ -272,9 +302,18 @@ def gen_plot(cols, dfs_mean, dfs_std, ylabel, N_vec, labels=None, fn='temp',
         plt.show()
 
 
-def gen_plot_set(cols_temp, df_mean, df_std, labels=None, fn='temp',
-                 error_type='c', ylabel_start='', colors=None, swap=False,
-                 logy=True, include_std=True, ypad=4):
+def gen_plot_set(cols_temp,
+                 df_mean,
+                 df_std,
+                 labels=None,
+                 fn='temp',
+                 error_type='c',
+                 ylabel_start='',
+                 colors=None,
+                 swap=False,
+                 logy=True,
+                 include_std=True,
+                 ypad=4):
     """Function to generate plots of data-driven dynamics results."""
     if colors is None:
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -307,9 +346,13 @@ def gen_plot_set(cols_temp, df_mean, df_std, labels=None, fn='temp',
         df1['std'] = df2['std']
         for j, key in enumerate(cols):
             key_old = cols_temp[j]
-            df1[df1['variable'] == key].plot('sigma', 'mean', yerr='std',
-                                             label=labels[key_old], ax=axs[i],
-                                             marker='.', color=colors[j],
+            df1[df1['variable'] == key].plot('sigma',
+                                             'mean',
+                                             yerr='std',
+                                             label=labels[key_old],
+                                             ax=axs[i],
+                                             marker='.',
+                                             color=colors[j],
                                              linestyle=linetype[j])
         axs[i].get_legend().remove()
 
@@ -351,8 +394,12 @@ def gen_plot_set(cols_temp, df_mean, df_std, labels=None, fn='temp',
     collist = '_'.join(cols_temp)
     figl, axl = plt.subplots()
     axl.axis(False)
-    legend = axl.legend(*label_params, loc="center", bbox_to_anchor=(0.5, 0.5),
-                        ncol=1, handlelength=4, fontsize=8)
+    legend = axl.legend(*label_params,
+                        loc="center",
+                        bbox_to_anchor=(0.5, 0.5),
+                        ncol=1,
+                        handlelength=4,
+                        fontsize=8)
     legend_fig = legend.figure
     legend_fig.canvas.draw()
     bbox = legend.get_window_extent()
@@ -366,8 +413,12 @@ def gen_plot_set(cols_temp, df_mean, df_std, labels=None, fn='temp',
     collist = '_'.join(cols_temp)
     figl, axl = plt.subplots()
     axl.axis(False)
-    legend = axl.legend(*label_params, loc="center", bbox_to_anchor=(0.5, 0.5),
-                        ncol=len(collist), handlelength=4, fontsize=8)
+    legend = axl.legend(*label_params,
+                        loc="center",
+                        bbox_to_anchor=(0.5, 0.5),
+                        ncol=len(collist),
+                        handlelength=4,
+                        fontsize=8)
     legend_fig = legend.figure
     legend_fig.canvas.draw()
     bbox = legend.get_window_extent()
@@ -433,7 +484,9 @@ dfs_mean = []
 dfs_std = []
 dfs_sem = []
 for N in N_vec:
-    df_mean, df_std, df_sem = generate_df(nu_vec, system=system, N=N,
+    df_mean, df_std, df_sem = generate_df(nu_vec,
+                                          system=system,
+                                          N=N,
                                           ttrain=ttrain)
     dfs_mean.append(df_mean)
     dfs_std.append(df_std)
@@ -446,17 +499,21 @@ if compare_with_wsindy:
 
         mean_wsindy = pd.read_csv(
             f'{wsindy_dir}/{base_dir}_ttrain=10_N={N}_mean_coef_err.csv',
-            header=None, index_col=0)
+            header=None,
+            index_col=0)
         std_wsindy = pd.read_csv(
             f'{wsindy_dir}/{base_dir}_ttrain=10_N={N}_std_coef_err.csv',
-            header=None, index_col=0)
+            header=None,
+            index_col=0)
 
         mean_u_wsindy = pd.read_csv(
             f'{wsindy_dir}/{base_dir}_ttrain=10_N={N}_mean_u_err.csv',
-            header=None, index_col=0)
+            header=None,
+            index_col=0)
         std_u_wsindy = pd.read_csv(
             f'{wsindy_dir}/{base_dir}_ttrain=10_N={N}_std_u_err.csv',
-            header=None, index_col=0)
+            header=None,
+            index_col=0)
 
         n_complete = mean_u_wsindy.loc[nu_vec][m + 1].to_numpy()
         dfs_mean[i]['wsindy_failed'] = n_complete / reps
@@ -491,17 +548,25 @@ if len(dfs_mean) == 1:
         'lasso': r'$\ell_1$-SINDy',
         'WSINDY': 'WSINDy'
     }
-    gen_plot_set(cols_c, dfs_mean[0], dfs_sem[0], labels=labels_c,
-                 fn=f'{base_dir}/{base_dir}_coef_summary_err', error_type='c')
+    gen_plot_set(cols_c,
+                 dfs_mean[0],
+                 dfs_sem[0],
+                 labels=labels_c,
+                 fn=f'{base_dir}/{base_dir}_coef_summary_err',
+                 error_type='c')
 
     cols_c_socp = ['socp_sm', 'socp_theory']
     labels_c_socp = {
         'socp_sm': 'DSINDy (Pareto)',
         'socp_theory': 'DSINDy (theory)'
     }
-    gen_plot_set(cols_c_socp, dfs_mean[0], dfs_sem[0], labels=labels_c_socp,
+    gen_plot_set(cols_c_socp,
+                 dfs_mean[0],
+                 dfs_sem[0],
+                 labels=labels_c_socp,
                  fn=f'{base_dir}/{base_dir}_coef_socp_summary_err',
-                 error_type='c', colors=[colors[0], colors[3]])
+                 error_type='c',
+                 colors=[colors[0], colors[3]])
 
     # Reconstruction Error (sem)
     cols_u = ['pred_socp_sm', 'pred_lasso', 'WSINDY']
@@ -510,8 +575,12 @@ if len(dfs_mean) == 1:
         'pred_lasso': r'$\ell_1$-SINDy',
         'WSINDY': 'WSINDy'
     }
-    gen_plot_set(cols_u, dfs_mean[0], dfs_sem[0], labels=labels_u,
-                 fn=f'{base_dir}/{base_dir}_u_summary_err', error_type='u')
+    gen_plot_set(cols_u,
+                 dfs_mean[0],
+                 dfs_sem[0],
+                 labels=labels_u,
+                 fn=f'{base_dir}/{base_dir}_u_summary_err',
+                 error_type='u')
 
     # Reconstruction Error (sem)
     cols_u_socp = ['pred_socp_sm', 'pred_socp_theory']
@@ -519,22 +588,33 @@ if len(dfs_mean) == 1:
         'pred_socp_sm': 'DSINDy (Pareto)',
         'pred_socp_theory': 'DSINDy (theory)'
     }
-    gen_plot_set(cols_u_socp, dfs_mean[0], dfs_sem[0], labels=labels_u_socp,
+    gen_plot_set(cols_u_socp,
+                 dfs_mean[0],
+                 dfs_sem[0],
+                 labels=labels_u_socp,
                  fn=f'{base_dir}/{base_dir}_u_socp_summary_err',
-                 error_type='u', colors=[colors[0], colors[3]])
+                 error_type='u',
+                 colors=[colors[0], colors[3]])
 
     # Derivative Error (std)
     cols_du = ['socp_sm', 'tikreg']
     labels_du = {'socp_sm': 'DSINDy', 'tikreg': 'Tikhonov Regularization'}
-    gen_plot_set(cols_du, dfs_mean[0], dfs_std[0],
-                 ylabel_start=f'{SysName}\n\n', labels=labels_du,
-                 fn=f'{base_dir}/{base_dir}_du_summary_err', error_type='du')
+    gen_plot_set(cols_du,
+                 dfs_mean[0],
+                 dfs_std[0],
+                 ylabel_start=f'{SysName}\n\n',
+                 labels=labels_du,
+                 fn=f'{base_dir}/{base_dir}_du_summary_err',
+                 error_type='du')
 
     # Smoothing Error (std)
     cols_smooth = ['smooth_proj', 'smooth_GP']
     labels_smooth = {'smooth_proj': 'IterPSDN', 'smooth_GP': 'GP'}
-    gen_plot_set(cols_smooth, dfs_mean[0], dfs_std[0],
-                 ylabel_start=f'{SysName}\n\n', labels=labels_smooth,
+    gen_plot_set(cols_smooth,
+                 dfs_mean[0],
+                 dfs_std[0],
+                 ylabel_start=f'{SysName}\n\n',
+                 labels=labels_smooth,
                  fn=f'{base_dir}/{base_dir}_smooth_summary_err',
                  error_type='us')
 
@@ -574,13 +654,20 @@ else:
         }
 
         # Coefficient Error
-        gen_plot(cols_c, dfs_mean, dfs_sem,
-                 r'Relative $\bm{c}_' + f'{i}' + r'$ error', N_vec,
-                 labels=labels_c, fn=f'{base_dir}/{base_dir}_c{i}_err')
+        gen_plot(cols_c,
+                 dfs_mean,
+                 dfs_sem,
+                 r'Relative $\bm{c}_' + f'{i}' + r'$ error',
+                 N_vec,
+                 labels=labels_c,
+                 fn=f'{base_dir}/{base_dir}_c{i}_err')
 
         # Coefficient Error SOCP
-        gen_plot(cols_socp_c, dfs_mean, dfs_sem,
-                 r'Relative $\bm{c}_' + f'{i}' + r'$ error', N_vec,
+        gen_plot(cols_socp_c,
+                 dfs_mean,
+                 dfs_sem,
+                 r'Relative $\bm{c}_' + f'{i}' + r'$ error',
+                 N_vec,
                  labels=labels_socp_c,
                  fn=f'{base_dir}/{base_dir}_c{i}_socp_err',
                  colors=[colors[0], colors[3]])
@@ -592,9 +679,13 @@ else:
             f'du{i}_socp_sm': 'DSINDy',
             f'du{i}_tikreg': 'Tikhonov Regularization'
         }
-        gen_plot(cols_du, dfs_mean, dfs_std,
-                 r'Relative $\dot{\bm{u}}_' + f'{i}' + r'$ error', N_vec,
-                 labels=labels_du, fn=f'{base_dir}/{base_dir}_u{i}_dot_err')
+        gen_plot(cols_du,
+                 dfs_mean,
+                 dfs_std,
+                 r'Relative $\dot{\bm{u}}_' + f'{i}' + r'$ error',
+                 N_vec,
+                 labels=labels_du,
+                 fn=f'{base_dir}/{base_dir}_u{i}_dot_err')
 
     # Training + testing prediciton error
     for i in range(1, m + 1):
@@ -606,9 +697,13 @@ else:
             f'u{i}_pred_lasso_GP': 'Lasso-GP',
             f'u{i}_WSINDY': 'WSINDy'
         }
-        gen_plot(cols_u, dfs_mean, dfs_sem,
-                 r'Relative $\bm{u}_' + f'{i}' + r'$ error', N_vec,
-                 labels=labels_u, fn=f'{base_dir}/{base_dir}_u{i}_err')
+        gen_plot(cols_u,
+                 dfs_mean,
+                 dfs_sem,
+                 r'Relative $\bm{u}_' + f'{i}' + r'$ error',
+                 N_vec,
+                 labels=labels_u,
+                 fn=f'{base_dir}/{base_dir}_u{i}_err')
 
         cols_socp_u = [f'u{i}_pred_socp_sm', f'u{i}_pred_socp_theory']
         labels_socp_u = {
@@ -616,8 +711,11 @@ else:
             f'u{i}_pred_socp_sm': 'DSINDy (Pareto)',
             f'u{i}_pred_socp_theory': 'DSINDy (theory)'
         }
-        gen_plot(cols_socp_u, dfs_mean, dfs_sem,
-                 r'Relative $\bm{u}_' + f'{i}' + r'$ error', N_vec,
+        gen_plot(cols_socp_u,
+                 dfs_mean,
+                 dfs_sem,
+                 r'Relative $\bm{u}_' + f'{i}' + r'$ error',
+                 N_vec,
                  labels=labels_socp_u,
                  fn=f'{base_dir}/{base_dir}_u{i}_socp_err',
                  colors=[colors[0], colors[3]])
@@ -630,9 +728,16 @@ labels_fail = {
     'wsindy_failed': 'WSINDy',
     'socp_theory_failed': 'DSINDy (theory)'
 }
-gen_plot(cols_fail, dfs_mean, dfs_std, 'Failure rate', N_vec,
-         labels=labels_fail, fn=f'{base_dir}/{base_dir}_failed', logy=False,
-         include_std=False, ypad=2)
+gen_plot(cols_fail,
+         dfs_mean,
+         dfs_std,
+         'Failure rate',
+         N_vec,
+         labels=labels_fail,
+         fn=f'{base_dir}/{base_dir}_failed',
+         logy=False,
+         include_std=False,
+         ypad=2)
 
 # Failed solution
 cols_fail = ['socp_failed', 'socp_theory_failed']
@@ -642,6 +747,14 @@ labels_fail = {
     'wsindy_failed': 'WSINDy',
     'socp_theory_failed': 'DSINDy (theory)'
 }
-gen_plot(cols_fail, dfs_mean, dfs_std, 'Failure rate', N_vec,
-         labels=labels_fail, fn=f'{base_dir}/{base_dir}_socp_failed',
-         logy=False, include_std=False, ypad=2, colors=[colors[0], colors[3]])
+gen_plot(cols_fail,
+         dfs_mean,
+         dfs_std,
+         'Failure rate',
+         N_vec,
+         labels=labels_fail,
+         fn=f'{base_dir}/{base_dir}_socp_failed',
+         logy=False,
+         include_std=False,
+         ypad=2,
+         colors=[colors[0], colors[3]])

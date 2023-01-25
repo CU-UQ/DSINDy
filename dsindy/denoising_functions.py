@@ -6,8 +6,8 @@ from sklearn.gaussian_process.kernels import RBF, WhiteKernel
 import plotly.graph_objects as go
 import plotly.io as pio
 import warnings
-import eqndiscov.monomial_library_utils as mlu
-import eqndiscov.utils as utils
+import dsindy.monomial_library_utils as mlu
+import dsindy.utils as utils
 from cvxopt import matrix, solvers
 
 pio.renderers.default = 'notebook+plotly_mimetype'
@@ -27,12 +27,20 @@ def smooth_data(t, u):
         else:
             u_smooth = np.vstack((u_smooth, u_smooth_fit.reshape(1, -1)))
 
-    return(u_smooth)
+    return (u_smooth)
 
 
-def projection_denoising(u, u_actual, d, sigma_estimate, A, max_iter=10,
-                         plot=True, alpha=.1, use_actual_P=False,
-                         center_Theta=False, check_diverge=True):
+def projection_denoising(u,
+                         u_actual,
+                         d,
+                         sigma_estimate,
+                         A,
+                         max_iter=10,
+                         plot=True,
+                         alpha=.1,
+                         use_actual_P=False,
+                         center_Theta=False,
+                         check_diverge=True):
     """Perform projection-based denoising.
 
     Args:
@@ -61,8 +69,7 @@ def projection_denoising(u, u_actual, d, sigma_estimate, A, max_iter=10,
     for i in range(max_iter):
 
         # Record error history
-        u_err_vec.append(
-            la.norm(u_proj - u_actual, axis=1) / u_norm)
+        u_err_vec.append(la.norm(u_proj - u_actual, axis=1) / u_norm)
 
         # Make Phi which is A\Theta and a column of ones
         if use_actual_P is True:
@@ -70,8 +77,8 @@ def projection_denoising(u, u_actual, d, sigma_estimate, A, max_iter=10,
         else:
             Theta_temp = mlu.make_Theta(u_proj, d=d)
             if center_Theta:
-                Theta_temp = mlu.center_Theta(
-                    Theta_temp, d, m, sigma_estimate[0]**2)
+                Theta_temp = mlu.center_Theta(Theta_temp, d, m,
+                                              sigma_estimate[0]**2)
 
         Phi = A @ Theta_temp
         if d == 0:
@@ -167,4 +174,4 @@ def solve_socp(u, B):
 
     x = np.array(sol['x']).flatten()
 
-    return(x)
+    return (x)

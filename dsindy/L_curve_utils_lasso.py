@@ -3,8 +3,7 @@
 import numpy as np
 import sklearn.linear_model as lm
 import plotly.graph_objects as go
-
-import eqndiscov.optim_problems as op
+import dsindy.optim_problems as op
 
 
 def find_curvature(x_temp, y_temp, extrema):
@@ -73,7 +72,8 @@ def find_alpha_vec(A, y, method, D=None, B=None, y2=None, opt_params=None):
         # Perform lasso at the 4 alpha values (based on method)
         for i in range(4):
             if method == '1':
-                las = lm.Lasso(alpha=alpha_vec[i], fit_intercept=False,
+                las = lm.Lasso(alpha=alpha_vec[i],
+                               fit_intercept=False,
                                tol=opt_params['tol'],
                                max_iter=opt_params['max_iter'])
                 las.fit(A, y)
@@ -97,7 +97,13 @@ def find_alpha_vec(A, y, method, D=None, B=None, y2=None, opt_params=None):
     return alpha_vec, sol_res, reg_res
 
 
-def lassoLCurve(A, y, D=None, B=None, method='2', max_iter=100000, y2=None,
+def lassoLCurve(A,
+                y,
+                D=None,
+                B=None,
+                method='2',
+                max_iter=100000,
+                y2=None,
                 opt_params=None):
     """Run L curve algorithm to find hyperparameter alpha.
 
@@ -120,8 +126,13 @@ def lassoLCurve(A, y, D=None, B=None, method='2', max_iter=100000, y2=None,
 
         # On first iteration find initial alpha vec and corresponding extrema
         if iter == 0:
-            alpha_vec, sol_res, reg_res = find_alpha_vec(
-                A, y, method, D=D, B=B, y2=y2, opt_params=opt_params)
+            alpha_vec, sol_res, reg_res = find_alpha_vec(A,
+                                                         y,
+                                                         method,
+                                                         D=D,
+                                                         B=B,
+                                                         y2=y2,
+                                                         opt_params=opt_params)
             alpha_all = np.copy(alpha_vec)
             sol_res_all = np.copy(sol_res)
             reg_res_all = np.copy(reg_res)
@@ -153,8 +164,13 @@ def lassoLCurve(A, y, D=None, B=None, method='2', max_iter=100000, y2=None,
                 print('error: alpha max less than alpha min')
                 print(alpha_vec)
                 return alpha_vec[0]
-            alpha_vec, sol_res, reg_res = find_alpha_vec(
-                A, y, method, D=D, B=B, y2=y2, opt_params=opt_params)
+            alpha_vec, sol_res, reg_res = find_alpha_vec(A,
+                                                         y,
+                                                         method,
+                                                         D=D,
+                                                         B=B,
+                                                         y2=y2,
+                                                         opt_params=opt_params)
             a_min = alpha_vec[0]
             a_max = alpha_vec[3]
             curvature1 = find_curvature(sol_res[:3], reg_res[:3], extrema)
@@ -188,7 +204,8 @@ def lassoLCurve(A, y, D=None, B=None, method='2', max_iter=100000, y2=None,
 
         # For new alpha, perform lasso based on the necessary method
         if method == '1':
-            las = lm.Lasso(alpha=alpha_vec[lasso_idx], fit_intercept=False,
+            las = lm.Lasso(alpha=alpha_vec[lasso_idx],
+                           fit_intercept=False,
                            tol=opt_params['tol'],
                            max_iter=opt_params['max_iter'])
             las.fit(A, y)
@@ -209,8 +226,15 @@ def lassoLCurve(A, y, D=None, B=None, method='2', max_iter=100000, y2=None,
     return alpha_final, alpha_all, sol_res_all, reg_res_all
 
 
-def get_L_curve_data(A, y, method='1', D=None, B=None, c_actual=None,
-                     tol=1e-12, y2=None, opt_params=None):
+def get_L_curve_data(A,
+                     y,
+                     method='1',
+                     D=None,
+                     B=None,
+                     c_actual=None,
+                     tol=1e-12,
+                     y2=None,
+                     opt_params=None):
     """Gives tsolution and regularization residuals to plot L-curve.
 
     Three optimzation methods are possible:
@@ -230,7 +254,9 @@ def get_L_curve_data(A, y, method='1', D=None, B=None, c_actual=None,
     for k in range(a_num):
         a = alphas[k]
         if method == '1':
-            las = lm.Lasso(alpha=a, fit_intercept=False, tol=opt_params['tol'],
+            las = lm.Lasso(alpha=a,
+                           fit_intercept=False,
+                           tol=opt_params['tol'],
                            max_iter=opt_params['max_iter'])
             las.fit(A, y)
             x = las.coef_
@@ -257,8 +283,15 @@ def get_L_curve_data(A, y, method='1', D=None, B=None, c_actual=None,
         return (reg_res, sol_res, alphas, alpha_best, x_best)
 
 
-def findAlphaMaxCurve(A, y, title, plot_results=False, D=None, B=None,
-                      method='1', y2=None, opt_params=None):
+def findAlphaMaxCurve(A,
+                      y,
+                      title,
+                      plot_results=False,
+                      D=None,
+                      B=None,
+                      method='1',
+                      y2=None,
+                      opt_params=None):
     """Find alpha_final using the L curve algorithm.
 
     Three optimzation methods are possible:
@@ -274,8 +307,10 @@ def findAlphaMaxCurve(A, y, title, plot_results=False, D=None, B=None,
         A, y, D=D, method=method, B=B, y2=y2, opt_params=opt_params)
 
     if method == '1':
-        las = lm.Lasso(alpha=alpha_final, fit_intercept=False,
-                       tol=opt_params['tol'], max_iter=opt_params['max_iter'])
+        las = lm.Lasso(alpha=alpha_final,
+                       fit_intercept=False,
+                       tol=opt_params['tol'],
+                       max_iter=opt_params['max_iter'])
         las.fit(A, y)
         sol_res = np.linalg.norm(A @ las.coef_ - y)
         reg_res = np.sum(np.abs(D @ las.coef_))
@@ -291,13 +326,17 @@ def findAlphaMaxCurve(A, y, title, plot_results=False, D=None, B=None,
     if plot_results:
         fig = go.Figure()
         fig.add_trace(
-            go.Scatter(x=reg_res_all, y=sol_res_all, text=alpha_all,
+            go.Scatter(x=reg_res_all,
+                       y=sol_res_all,
+                       text=alpha_all,
                        mode='markers'))
         fig.add_trace(go.Scatter(x=[reg_res], y=[sol_res], text=alpha_final))
         fig.update_xaxes(type='log',
                          title_text='Regularization residual (l1 or l2)')
         fig.update_yaxes(type='log', title_text='Solution residual (l2)')
-        fig.update_layout(title_text=title, width=500, height=350,
+        fig.update_layout(title_text=title,
+                          width=500,
+                          height=350,
                           showlegend=False)
         fig.show()
 

@@ -4,7 +4,7 @@ import numpy as np
 import scipy.special as sps
 from scipy.integrate import solve_ivp
 
-import eqndiscov.monomial_library_utils as mlu
+import dsindy.monomial_library_utils as mlu
 
 
 def get_coefficient_vector(system, sys_params, m, p):
@@ -71,8 +71,12 @@ def setup_system(t, nu, d, system, sys_params=None, u0=[0, 1], seed=123456):
     c = get_coefficient_vector(system, sys_params, m, p=p)
 
     # Find the true solution and derivative
-    out = solve_ivp(run_monomial_ode, [0, t[-1]], u0, args=[c, d], t_eval=t,
-                    rtol=1e-12, atol=1e-12)
+    out = solve_ivp(run_monomial_ode, [0, t[-1]],
+                    u0,
+                    args=[c, d],
+                    t_eval=t,
+                    rtol=1e-12,
+                    atol=1e-12)
     u_actual = out.y
     Theta = mlu.make_Theta(u_actual, d=d)
     udot_actual = (Theta @ c.T).T

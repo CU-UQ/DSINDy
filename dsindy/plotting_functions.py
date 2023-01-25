@@ -7,8 +7,8 @@ import numpy.linalg as la
 import plotly.graph_objects as go
 import plotly.io as pio
 
-import eqndiscov.monomial_library_utils as mlu
-import eqndiscov.L_curve_utils_lasso as lcu
+import dsindy.monomial_library_utils as mlu
+import dsindy.L_curve_utils_lasso as lcu
 
 importlib.reload(mlu)
 importlib.reload(lcu)
@@ -46,7 +46,7 @@ def plot_smooth_states(u1, u2, u_noise, u_actual):
 
 def print_socp_residuals(u, u_noise, du, du_actual, A, nu):
     """Print residuals following SOCP optimization."""
-    N = np.size(du) - 1         # Don't include initial condition
+    N = np.size(du) - 1  # Don't include initial condition
     C = 1 / np.sqrt(N)
     print('----Solution Residual ||A udot - u_proj||----')
     for i in range(2):

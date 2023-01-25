@@ -4,4 +4,7 @@
     "python.linting.flake8Enabled": true,
     "editor.formatOnSave": true,
     "python.formatting.provider": "yapf", // or "black" here
+    "python.formatting.yapfArgs": [
+        "--style={based_on_style: pep8, indent_width: 4}"
+    ]
 }

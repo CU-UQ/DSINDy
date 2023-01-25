@@ -17,14 +17,20 @@ import numpy as np
 import numpy.linalg as la
 import pandas as pd
 
-import eqndiscov.denoising_functions as df
-import eqndiscov.ODE_systems as odesys
-import eqndiscov.utils as utils
+import dsindy.denoising_functions as df
+import dsindy.ODE_systems as odesys
+import dsindy.utils as utils
 import plotly.graph_objects as go
 
 
-def run_replications(system, N, ttrain, start=0, add_to_file=False,
-                     find_gp=True, replications=20, bdir='/app/'):
+def run_replications(system,
+                     N,
+                     ttrain,
+                     start=0,
+                     add_to_file=False,
+                     find_gp=True,
+                     replications=20,
+                     bdir='/app/'):
     """Smoothing noise replications."""
     # Number of sample replications
     max_iter = 1000
@@ -101,7 +107,12 @@ def run_replications(system, N, ttrain, start=0, add_to_file=False,
         for j in range(start, start + replications):
             # Find noisy/actual measurements and actual derivative/coef vector
             u, u_actual, du_actual, c_actual = odesys.setup_system(
-                t, nu, p, system[0], sys_params=sys_params, u0=u0,
+                t,
+                nu,
+                p,
+                system[0],
+                sys_params=sys_params,
+                u0=u0,
                 seed=seed + j)
 
             # Gaussian process smooth data
@@ -129,9 +140,15 @@ def run_replications(system, N, ttrain, start=0, add_to_file=False,
 
             # Projection-based smoothing
             A = utils.get_discrete_integral_matrix(t)
-            u_proj = df.projection_denoising(u, u_actual, p, sigma_estimate, A,
-                                             alpha=alpha, max_iter=max_iter,
-                                             plot=True, use_actual_P=False,
+            u_proj = df.projection_denoising(u,
+                                             u_actual,
+                                             p,
+                                             sigma_estimate,
+                                             A,
+                                             alpha=alpha,
+                                             max_iter=max_iter,
+                                             plot=True,
+                                             use_actual_P=False,
                                              center_Theta=True,
                                              check_diverge=check_diverge)[0]
 
@@ -167,65 +184,103 @@ add_to_file = False
 bdir = '/app/'
 
 system = '2a'
-N = 1000        # Number of samples
-ttrain = 10     # Training time
+N = 1000  # Number of samples
+ttrain = 10  # Training time
 
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
-                 replications=10, bdir=bdir)
-
-system = '2b'
-N = 250         # Number of samples
-ttrain = 10     # Training time
-
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+run_replications(system,
+                 N,
+                 ttrain,
+                 start=start,
+                 add_to_file=add_to_file,
+                 replications=10,
                  bdir=bdir)
 
 system = '2b'
-N = 500         # Number of samples
-ttrain = 10     # Training time
+N = 250  # Number of samples
+ttrain = 10  # Training time
 
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+run_replications(system,
+                 N,
+                 ttrain,
+                 start=start,
+                 add_to_file=add_to_file,
                  bdir=bdir)
 
 system = '2b'
-N = 1000        # Number of samples
-ttrain = 10     # Training time
+N = 500  # Number of samples
+ttrain = 10  # Training time
 
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+run_replications(system,
+                 N,
+                 ttrain,
+                 start=start,
+                 add_to_file=add_to_file,
                  bdir=bdir)
 
 system = '2b'
-N = 2000        # Number of samples
-ttrain = 10     # Training time
+N = 1000  # Number of samples
+ttrain = 10  # Training time
 
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+run_replications(system,
+                 N,
+                 ttrain,
+                 start=start,
+                 add_to_file=add_to_file,
                  bdir=bdir)
 
 system = '2b'
-N = 4000        # Number of samples
-ttrain = 10     # Training time
+N = 2000  # Number of samples
+ttrain = 10  # Training time
 
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+run_replications(system,
+                 N,
+                 ttrain,
+                 start=start,
+                 add_to_file=add_to_file,
+                 bdir=bdir)
+
+system = '2b'
+N = 4000  # Number of samples
+ttrain = 10  # Training time
+
+run_replications(system,
+                 N,
+                 ttrain,
+                 start=start,
+                 add_to_file=add_to_file,
                  bdir=bdir)
 
 # For this sample size don't perform Gaussian process regression, too slow
 system = '2b'
-N = 8000        # Number of samples
-ttrain = 10     # Training time
+N = 8000  # Number of samples
+ttrain = 10  # Training time
 
-run_replications(system, N, ttrain, start=0, find_gp=False, replications=30,
+run_replications(system,
+                 N,
+                 ttrain,
+                 start=0,
+                 find_gp=False,
+                 replications=30,
                  bdir=bdir)
 
 system = '3'
-N = 1000        # Number of samples
-ttrain = 10     # Training time
+N = 1000  # Number of samples
+ttrain = 10  # Training time
 
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+run_replications(system,
+                 N,
+                 ttrain,
+                 start=start,
+                 add_to_file=add_to_file,
                  bdir=bdir)
 
 system = '4'
-N = 1000        # Number of samples
-ttrain = 10     # Training time
+N = 1000  # Number of samples
+ttrain = 10  # Training time
 
-run_replications(system, N, ttrain, start=start, add_to_file=add_to_file,
+run_replications(system,
+                 N,
+                 ttrain,
+                 start=start,
+                 add_to_file=add_to_file,
                  bdir=bdir)

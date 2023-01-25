@@ -30,11 +30,11 @@ import multiprocessing
 import time
 import matplotlib.pyplot as plt
 
-import eqndiscov.monomial_library_utils as mlu
-import eqndiscov.plotting_functions as pf
-import eqndiscov.ODE_systems as odesys
-import eqndiscov.utils as utils
-import eqndiscov.optim_problems as op
+import dsindy.monomial_library_utils as mlu
+import dsindy.plotting_functions as pf
+import dsindy.ODE_systems as odesys
+import dsindy.utils as utils
+import dsindy.optim_problems as op
 
 # Import tools need to show plots in notebooks
 pio.renderers.default = 'notebook+plotly_mimetype'
@@ -47,9 +47,10 @@ bdir = '/home/jacqui/projects/DSINDy/'
 with open(f'{bdir}/arguments.json', 'r') as fid:
     arguments = json.load(fid)
 
-utils.disp_table(
-    pd.DataFrame.from_dict(arguments, orient='index', columns=['values']),
-    dig=6)
+utils.disp_table(pd.DataFrame.from_dict(arguments,
+                                        orient='index',
+                                        columns=['values']),
+                 dig=6)
 
 nu = arguments['nu']
 realization = arguments['realization']
@@ -63,10 +64,10 @@ if N == 8000:
 # %% tags=["remove_cell"]
 # For Testing
 bdir = '/home/jacqui/projects/DSINDy/'
-nu = 0.01       # noise level (variance)
+nu = 0.01  # noise level (variance)
 system = '2b'
-N = 1000        # number of samples
-ttrain = 10     # training time
+N = 1000  # number of samples
+ttrain = 10  # training time
 realization = 7
 datadir = f'{bdir}/paper_noise_realizations/Duffing/'
 get_GP = True
@@ -79,11 +80,11 @@ get_GP = True
 # %%
 description = f'system={system}_N={N}_nu={nu}_realization={realization}'
 sys_params, u0, d = odesys.get_system_values(system)
-tend = ttrain * 2       # testing time (includes initial trianing)
-tstep = 0.01            # step size for running ODE
+tend = ttrain * 2  # testing time (includes initial trianing)
+tstep = 0.01  # step size for running ODE
 m = np.size(u0)
 p = int(sps.factorial(m + d) / (sps.factorial(m) * sps.factorial(d)))
-perc_trun = 0.05        # leads to N * (1-2*perc_trun) training samples
+perc_trun = 0.05  # leads to N * (1-2*perc_trun) training samples
 N_start = int(N * perc_trun)
 N_end = int(N * (1 - perc_trun))
 
@@ -91,7 +92,10 @@ N_end = int(N * (1 - perc_trun))
 t = np.linspace(0, ttrain, num=N)
 
 # Find actual measurements/derivative/coef vector
-u, u_actual, du_actual, c_actual = odesys.setup_system(t, nu, d, system[0],
+u, u_actual, du_actual, c_actual = odesys.setup_system(t,
+                                                       nu,
+                                                       d,
+                                                       system[0],
                                                        sys_params=sys_params,
                                                        u0=u0)
 
@@ -119,9 +123,10 @@ err_dict_u_prior['proj'] = utils.rel_err(u_proj, u_actual)
 columns = []
 for i in range(np.size(u, 0)):
     columns.append(f'u{i+1} relative l1 error')
-utils.disp_table(
-    pd.DataFrame.from_dict(err_dict_u_prior, orient='index', columns=columns),
-    dig=6)
+utils.disp_table(pd.DataFrame.from_dict(err_dict_u_prior,
+                                        orient='index',
+                                        columns=columns),
+                 dig=6)
 
 if get_GP:
     pf.plot_smooth_states(u_proj, u_smooth, u, u_actual)
@@ -152,7 +157,10 @@ startTime = time.time()
 opt_params_deriv = {'tol': 1e-12, 'a_min': 1e-12, 'a_max': 100}
 du = np.zeros((m, N))
 for i in range(m):
-    du[i] = op.deriv_tik_reg(t, u[i] - u[i, 0], du_actual[i], plot=True,
+    du[i] = op.deriv_tik_reg(t,
+                             u[i] - u[i, 0],
+                             du_actual[i],
+                             plot=True,
                              title=f'L curve for u{i+1} derivative',
                              opt_params=opt_params_deriv)
 
@@ -279,8 +287,12 @@ for i in range(m):
     # u0_du_socp_es[i] = op.run_socp_optimization(
     #     P_proj @ u_proj[i], A_final, B_es, D, W_proj, C_est[i],
     #     opt_params=socp_opt_params)
-    u0_du_socp_sm[i] = op.run_socp_optimization(P_proj @ u_proj[i], A_final,
-                                                B_sm, D, W_proj, C_est[i],
+    u0_du_socp_sm[i] = op.run_socp_optimization(P_proj @ u_proj[i],
+                                                A_final,
+                                                B_sm,
+                                                D,
+                                                W_proj,
+                                                C_est[i],
                                                 opt_params=socp_opt_params)
 
 executionTime = (time.time() - startTime)
@@ -300,8 +312,13 @@ for i in range(m):
     B_new = np.copy(B_sm)
     c_old = np.ones(p)
     for j in range(10):
-        x = op.solve_socp(P_proj @ u_proj[i], C_est[i], A_final, B_new, D,
-                          alpha, checkResid=False)[0]
+        x = op.solve_socp(P_proj @ u_proj[i],
+                          C_est[i],
+                          A_final,
+                          B_new,
+                          D,
+                          alpha,
+                          checkResid=False)[0]
         cW = np.hstack((np.zeros(p).reshape(-1, 1), B_sm)) @ x
         coef_change = la.norm(W_proj @ cW - c_old) / la.norm(c_old)
         print(f'Change in coefs at iter {j+1}: {coef_change}')
@@ -375,8 +392,10 @@ W_proj_trun = np.diag(1 / la.norm(Theta_proj_trun, axis=0))
 lasso_c = np.zeros((m, p))
 for i in range(m):
     lasso_c[i] = op.run_weighted_lasso(Theta_proj_trun @ W_proj_trun,
-                                       du_trun[i], W_proj_trun,
-                                       type='Proj smoothed', species=f'u{i+1}',
+                                       du_trun[i],
+                                       W_proj_trun,
+                                       type='Proj smoothed',
+                                       species=f'u{i+1}',
                                        show_L_curve=True,
                                        opt_params=lasso_opt_params)
 
@@ -413,8 +432,10 @@ for key, val in c_dict.items():
 columns = []
 for i in range(np.size(u, 0)):
     columns.append(f'Relative c{i+1} l2 error')
-utils.disp_table(
-    pd.DataFrame.from_dict(c_err_dict, orient='index', columns=columns), dig=6)
+utils.disp_table(pd.DataFrame.from_dict(c_err_dict,
+                                        orient='index',
+                                        columns=columns),
+                 dig=6)
 
 # %% [markdown]
 """
@@ -426,22 +447,31 @@ utils.disp_table(
 t_test = np.arange(0, tend * 1.0001, tstep)
 idx_end_train = np.where(t_test == ttrain)[0][0]
 
-out = solve_ivp(odesys.run_monomial_ode, [0, t_test[-1]], u0,
-                args=[c_actual, d], t_eval=t_test, rtol=1e-12, atol=1e-12)
+out = solve_ivp(odesys.run_monomial_ode, [0, t_test[-1]],
+                u0,
+                args=[c_actual, d],
+                t_eval=t_test,
+                rtol=1e-12,
+                atol=1e-12)
 u_actual_test = out.y
 
 
 def run_ode(q, tend, u0, c, d, t_test):
     """Function to run ode as separate process."""
-    out = solve_ivp(odesys.run_monomial_ode, [0, tend], u0, args=[c, d],
-                    t_eval=t_test, rtol=1e-12, atol=1e-12)
+    out = solve_ivp(odesys.run_monomial_ode, [0, tend],
+                    u0,
+                    args=[c, d],
+                    t_eval=t_test,
+                    rtol=1e-12,
+                    atol=1e-12)
     q.put(out)
 
 
 sol_dict = {}
 for key, val in c_dict.items():
     que = multiprocessing.Queue()
-    pro = multiprocessing.Process(target=run_ode, name="Run_ODE",
+    pro = multiprocessing.Process(target=run_ode,
+                                  name="Run_ODE",
                                   args=(que, tend, u0, c_dict[key], d, t_test))
     pro.start()
 
@@ -507,13 +537,15 @@ for i in range(m):
         fig2.add_trace(go.Scatter(x=t_test, y=u_cur_err[i], name=key))
 
     fig1.add_trace(go.Scatter(x=t_test, y=u_actual_test[i], name='Actual'))
-    fig1.update_layout(title_text=f'Simulation Results (u{i+1})', width=600,
+    fig1.update_layout(title_text=f'Simulation Results (u{i+1})',
+                       width=600,
                        height=400)
     fig1.update_xaxes(title_text='Time')
     fig1.update_yaxes(title_text=f'u{i+1}')
     fig1.show()
 
-    fig2.update_layout(title_text=f'Prediction Error (u{i+1})', width=600,
+    fig2.update_layout(title_text=f'Prediction Error (u{i+1})',
+                       width=600,
                        height=400)
     fig2.update_xaxes(title_text='Time')
     fig2.update_yaxes(title_text=f'u{i+1}')
@@ -700,4 +732,5 @@ out_dir = f'{bdir}/current_output/{base_name}'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 summary_df.to_csv(f'{out_dir}/{base_name}_realization={realization}.csv',
-                  header=False, index=False)
+                  header=False,
+                  index=False)

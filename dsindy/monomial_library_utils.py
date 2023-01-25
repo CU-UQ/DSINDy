@@ -3,8 +3,7 @@
 import numpy as np
 import scipy.special as sps
 import itertools
-
-from eqndiscov.utils import ncr
+from dsindy.utils import ncr
 
 
 def make_Theta(u, d=3):

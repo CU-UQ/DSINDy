@@ -49,9 +49,13 @@ def run_notebook(file_name, out_file_type='html', bdir='/app', **arguments):
     os.remove(f'{bdir}/notebooks/{file_name}.ipynb')
 
 
-def run_notebook_set(system, N_vec, ttrain=10,
-                     nu_vec=[1e-6, 1e-5, 0.0001, 0.001, 0.01, 0.1,
-                             1], n_realizations=10, start=0, bdir='/app'):
+def run_notebook_set(system,
+                     N_vec,
+                     ttrain=10,
+                     nu_vec=[1e-6, 1e-5, 0.0001, 0.001, 0.01, 0.1, 1],
+                     n_realizations=10,
+                     start=0,
+                     bdir='/app'):
     """Generate a set of notebooks at different N and nu."""
     if system[0] == '2':
         datadir = f'{bdir}/paper_noise_realizations/Duffing/'
@@ -63,9 +67,14 @@ def run_notebook_set(system, N_vec, ttrain=10,
     for N in N_vec:
         for nu in nu_vec:
             for i in range(n_realizations):
-                run_notebook('run_SOCP_and_IRW_Lasso', realization=start + i,
-                             nu=nu, system=system, ttrain=ttrain, N=N,
-                             datadir=datadir, bdir=bdir)
+                run_notebook('run_SOCP_and_IRW_Lasso',
+                             realization=start + i,
+                             nu=nu,
+                             system=system,
+                             ttrain=ttrain,
+                             N=N,
+                             datadir=datadir,
+                             bdir=bdir)
 
 
 # system = '2a'
@@ -76,8 +85,12 @@ def run_notebook_set(system, N_vec, ttrain=10,
 system = '2b'
 N_vec = [250]
 nu_vec = [0.01]
-run_notebook_set(system, N_vec, bdir='/home/jacqui/DSINDy', start=11,
-                 n_realizations=1, nu_vec=nu_vec)
+run_notebook_set(system,
+                 N_vec,
+                 bdir='/home/jacqui/DSINDy',
+                 start=11,
+                 n_realizations=1,
+                 nu_vec=nu_vec)
 
 # system = '2c'
 # N_vec = [1000]

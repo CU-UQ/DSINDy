@@ -8,8 +8,8 @@ from mosek import iparam, dparam
 # import importlib
 # import time
 
-import eqndiscov.L_curve_utils_lasso as lcu
-import eqndiscov.utils as utils
+import dsindy.L_curve_utils_lasso as lcu
+import dsindy.utils as utils
 
 
 def reset_mosek_params():
@@ -35,16 +35,25 @@ def increase_mosek_tol():
     }
 
 
-def deriv_tik_reg(t, u, udot, title='', plot=False, alpha=None,
+def deriv_tik_reg(t,
+                  u,
+                  udot,
+                  title='',
+                  plot=False,
+                  alpha=None,
                   opt_params=None):
     """Approximate derivative from states using Tikhonov regularization."""
     A = utils.get_discrete_integral_matrix(t)
     D = utils.get_derivative_matrix(t)
 
     if alpha is None:
-        alpha, x_final, y_final = lcu.findAlphaMaxCurve(
-            A, u, title, plot_results=plot, D=D, method='2',
-            opt_params=opt_params)
+        alpha, x_final, y_final = lcu.findAlphaMaxCurve(A,
+                                                        u,
+                                                        title,
+                                                        plot_results=plot,
+                                                        D=D,
+                                                        method='2',
+                                                        opt_params=opt_params)
 
     deriv = np.linalg.inv(A.T @ A + alpha * D.T @ D) @ A.T @ u
 
@@ -62,10 +71,15 @@ def run_socp_optimization(u, A, B, D, W, args, opt_params=None, start=None):
     for i in range(opt_params['max_IRW_iter']):
         for j in range(5):
             try:
-                alpha = lcu.findAlphaMaxCurve(
-                    A, u, f'SOCP L curve: Iteration {i+1}', method='SOCP', D=D,
-                    B=B_new, y2=args, plot_results=True,
-                    opt_params=opt_params)[0]
+                alpha = lcu.findAlphaMaxCurve(A,
+                                              u,
+                                              f'SOCP L curve: Iteration {i+1}',
+                                              method='SOCP',
+                                              D=D,
+                                              B=B_new,
+                                              y2=args,
+                                              plot_results=True,
+                                              opt_params=opt_params)[0]
                 break
             except Exception as ex:
 
@@ -112,17 +126,29 @@ def run_socp_optimization(u, A, B, D, W, args, opt_params=None, start=None):
     return (x)
 
 
-def run_weighted_lasso(A, y, W, method='1', show_L_curve=False,
-                       type='monomial', species='u1', opt_params=None):
+def run_weighted_lasso(A,
+                       y,
+                       W,
+                       method='1',
+                       show_L_curve=False,
+                       type='monomial',
+                       species='u1',
+                       opt_params=None):
     """Iteratively run reweighted lasso."""
     W2_inv = np.eye(np.size(A, 1))
     c_old = np.ones(np.size(A, 1))
     for i in range(opt_params['max_IRW_iter']):
         alpha_final = lcu.findAlphaMaxCurve(
-            A @ W2_inv, y, f'L curve for {type} system ({species}).',
-            plot_results=show_L_curve, method='1', opt_params=opt_params)[0]
-        las = lm.Lasso(alpha=alpha_final, fit_intercept=False,
-                       tol=opt_params['tol'], max_iter=opt_params['max_iter'])
+            A @ W2_inv,
+            y,
+            f'L curve for {type} system ({species}).',
+            plot_results=show_L_curve,
+            method='1',
+            opt_params=opt_params)[0]
+        las = lm.Lasso(alpha=alpha_final,
+                       fit_intercept=False,
+                       tol=opt_params['tol'],
+                       max_iter=opt_params['max_iter'])
         las.fit(A @ W2_inv, y)
         cW = W2_inv @ las.coef_
         coef_change = la.norm(W @ cW - c_old) / la.norm(c_old)
@@ -133,14 +159,25 @@ def run_weighted_lasso(A, y, W, method='1', show_L_curve=False,
 
         W2 = np.diag(1 / (np.abs(cW) + 1e-4 * np.max(np.abs(cW))))
         W2_inv = la.inv(W2)
-        show_L_curve = False    # Only show L-curve for first iteration
+        # Only show L-curve for first iteration
+        show_L_curve = False
     print('Final coefs:')
     print(c_old)
     return (c_old)
 
 
-def solve_socp(y, y2, A, B, D, alpha, B_subs=None, P_subs=None,
-               return_sol=False, solver=None, x_old=None, checkResid=True):
+def solve_socp(y,
+               y2,
+               A,
+               B,
+               D,
+               alpha,
+               B_subs=None,
+               P_subs=None,
+               return_sol=False,
+               solver=None,
+               x_old=None,
+               checkResid=True):
     """Solve SOCP to learn state derivatives.
 
     Solves the following:
