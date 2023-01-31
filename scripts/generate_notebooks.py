@@ -4,7 +4,10 @@ import json
 import subprocess
 
 
-def run_notebook(file_name, out_file_type='html', bdir='/app', **arguments):
+def run_notebook(file_name,
+                 out_file_type='html',
+                 bdir='/home/jacqui/projects/DSINDy/',
+                 **arguments):
     """Run and output notebook for a given set of parameters."""
     realization = arguments['realization']
     nu = arguments['nu']
@@ -55,7 +58,7 @@ def run_notebook_set(system,
                      nu_vec=[1e-6, 1e-5, 0.0001, 0.001, 0.01, 0.1, 1],
                      n_realizations=10,
                      start=0,
-                     bdir='/app'):
+                     bdir='/home/jacqui/projects/DSINDy/'):
     """Generate a set of notebooks at different N and nu."""
     if system[0] == '2':
         datadir = f'{bdir}/paper_noise_realizations/Duffing/'
@@ -63,6 +66,8 @@ def run_notebook_set(system,
         datadir = f'{bdir}/paper_noise_realizations/Van_der_Pol/'
     if system[0] == '4':
         datadir = f'{bdir}/paper_noise_realizations/Rossler/'
+    if system[0] == '5':
+        datadir = f'{bdir}/paper_noise_realizations/Lorenz_96/'
 
     for N in N_vec:
         for nu in nu_vec:
@@ -82,15 +87,15 @@ def run_notebook_set(system,
 # nu_vec = [0.0001]
 # run_notebook_set(system, N_vec, start=25, n_realizations=1, nu_vec=nu_vec)
 
-system = '2b'
-N_vec = [250]
-nu_vec = [0.01]
-run_notebook_set(system,
-                 N_vec,
-                 bdir='/home/jacqui/DSINDy',
-                 start=11,
-                 n_realizations=1,
-                 nu_vec=nu_vec)
+# system = '2b'
+# N_vec = [250]
+# nu_vec = [0.01]
+# run_notebook_set(system,
+#                  N_vec,
+#                  bdir='/home/jacqui/DSINDy',
+#                  start=11,
+#                  n_realizations=1,
+#                  nu_vec=nu_vec)
 
 # system = '2c'
 # N_vec = [1000]
@@ -103,5 +108,15 @@ run_notebook_set(system,
 # system = '4'
 # N_vec = [1000]
 # run_notebook_set(system, N_vec, start=10, n_realizations=20)
+
+system = '5'
+N_vec = [2000]
+ttrain = 5
+run_notebook_set(system,
+                 N_vec,
+                 start=0,
+                 n_realizations=30,
+                 ttrain=ttrain,
+                 nu_vec=[1])
 
 print('Code finished!')

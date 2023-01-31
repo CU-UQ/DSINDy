@@ -264,6 +264,6 @@ def solve_socp(y,
             increase_mosek_tol()
             print('Increasing mosek tolerence')
         else:
-            ex_dict = {'name': 'Too small', 'alpha': alpha}
+            ex_dict = {'name': 'Too large', 'alpha': alpha}
             print(f'Current alpha: {alpha}')
             raise Exception(ex_dict)

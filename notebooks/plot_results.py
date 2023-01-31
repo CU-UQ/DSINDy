@@ -45,8 +45,9 @@ The plots show the mean results of these 10 realizations.
 system = '2b'
 # system = '3'
 # system = '4'
+# system = '5'
 
-bdir = '/home/jacqui/DSINDy/'
+bdir = '/home/jacqui/projects/DSINDy/'
 
 # %%
 
@@ -59,6 +60,8 @@ def generate_df(nu_vec, N=1000, ttrain=10, system='2', reps=30):
         base_dir = f'{bdir}/paper_optimizations/Van_der_Pol/'
     if system[0] == '4':
         base_dir = f'{bdir}/paper_optimizations/Rossler/'
+    if system[0] == '5':
+        base_dir = f'{bdir}/paper_optimizations/Lorenz_96/'
     firstRow = False
     lasso_failed = []
     socp_failed = []
@@ -95,14 +98,23 @@ def generate_df(nu_vec, N=1000, ttrain=10, system='2', reps=30):
 
         n = np.size(err_df, 1)
 
-        err_df[err_df == -1] = 1  # None
-        err_df[err_df > 1] = 1  # None
+        # For 5th system we include time till > 10% error
+        if system == '5':
+            err_df.loc['t_fail_socp_sm'] = err_df.loc['t_fail_socp_sm'] - 5
+            err_df.loc[
+                't_fail_socp_theory'] = err_df.loc['t_fail_socp_theory'] - 5
+            err_df.loc['t_fail_lasso'] = err_df.loc['t_fail_lasso'] - 5
 
+        # Look at system prediction results and check for failure
         key_ends = ['_pred_socp_sm', '_pred_socp_theory', '_pred_lasso']
         for key_end in key_ends:
             keyset = []
             for k in range(m):
                 keyset = keyset + [f'u{k+1}{key_end}']
+
+            err_df[err_df.loc[keyset] > 1] = 1
+            err_df[err_df.loc[keyset] == -1] = 1
+
             failed = np.mean(np.max(err_df.loc[keyset], axis=0) == 1)
             if key_end == '_pred_socp_sm':
                 socp_failed.append(failed)
@@ -149,23 +161,16 @@ def gen_plot(cols,
              labels=None,
              fn='temp',
              colors=None,
-             swap=False,
              logy=True,
              include_std=True,
-             ypad=4):
+             ypad=4,
+             sig_vec=[0.01, 0.1, 1]):
     """Function to generate plots of data-driven dynamics results."""
     if colors is None:
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     linetype = ['solid', 'dashed', 'dotted']
-    """Plot the results as a function of noise level."""
-    fig, axs = plt.subplots(1, len(dfs_mean), sharey=True)
-    if len(dfs_mean) > 1:
-        fig.set_size_inches(2 * len(dfs_mean), 2)
-    else:
-        fig.set_size_inches(1.75, 2)
-    if type(axs) is not np.ndarray:
-        axs = [axs]
-    # Reorganize datafame to more easily plot
+
+    # Organize dataframe for easier plotting
     dfs_sig = {}
     for i in range(len(dfs_mean)):
         df_new = dfs_mean[i][cols]
@@ -181,49 +186,6 @@ def gen_plot(cols,
                        inplace=True)
             df1['std'] = df2['std']
 
-        if i == 0:
-            sig_vec = [0.01, 0.1, 1]
-        for j, key in enumerate(cols):
-            if include_std:
-                df1[df1['variable'] == key].plot('sigma',
-                                                 'mean',
-                                                 yerr='std',
-                                                 label=labels[key],
-                                                 ax=axs[i],
-                                                 marker='.',
-                                                 color=colors[j],
-                                                 linestyle=linetype[j])
-            else:
-                df1[df1['variable'] == key].plot('sigma',
-                                                 'mean',
-                                                 label=labels[key],
-                                                 ax=axs[i],
-                                                 marker='.',
-                                                 color=colors[j],
-                                                 linestyle=linetype[j])
-
-        if logy:
-            axs[i].loglog()
-            axs[i].set_title(f'N={N_vec[i]}')
-        else:
-            axs[i].semilogx()
-
-        axs[i].set_xlabel(r'$\sigma$')
-        axs[i].grid(True, which='major', color='gray')
-        # axs[i].set_xticklabels([0.001, 0.01, .1, 1])
-        axs[i].set_xticks([0.001, 0.01, .1, 1])
-        axs[i].get_legend().remove()
-        axs[i].xaxis.set_minor_locator(
-            LogLocator(base=10, subs=np.arange(2, 10) * .1, numticks=100))
-
-        if not logy:
-            axs[i].yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
-            axs[i].yaxis.set_minor_locator(MultipleLocator(.2))
-            axs[i].yaxis.set_minor_locator(MultipleLocator(.1))
-            axs[i].set_ylim([-0.05, 1.05])
-            if i == 0:
-                axs[i].set_title(ylabel)
-
         df1['N'] = N_vec[i]
         for j, sig in enumerate(np.unique(df1.sigma)):
             if i == 0:
@@ -231,75 +193,108 @@ def gen_plot(cols,
             else:
                 dfs_sig[j] = pd.concat([dfs_sig[j], df1[df1.sigma == sig]])
             dfs_sig[j].pop('sigma')
+
+    # Plot results at different noise levels
+    fig, axs = plt.subplots(1, len(dfs_sig), sharey=True)
+    fig.set_size_inches(1.75 * len(dfs_sig), 2)
+    if type(axs) is not np.ndarray:
+        axs = [axs]
+    if include_std:
+        yerr = 'std'
+    else:
+        yerr = None
+    for i in range(len(dfs_sig)):
+        df1 = dfs_sig[i]
+        for j, key in enumerate(cols):
+            df1[df1['variable'] == key].plot('N',
+                                             'mean',
+                                             yerr=yerr,
+                                             label=labels[key],
+                                             ax=axs[i],
+                                             marker='.',
+                                             color=colors[j],
+                                             linestyle=linetype[j])
+        if logy:
+            axs[i].loglog()
+        else:
+            axs[i].semilogx()
+
+        if i == 0:
+            axs[i].set_ylabel(ylabel, labelpad=ypad)
+
+        axs[i].set_xlabel('N')
+        axs[i].grid(True, which='major', color='gray')
+        axs[i].set_xticks([1000])
+        axs[i].set_xticks([250, 500, 2000, 4000, 8000], minor=True)
+        axs[i].set_xticklabels([1000], rotation=45)
+        axs[i].set_xticklabels([250, 500, 2000, 4000, 8000],
+                               minor=True,
+                               rotation=45)
+        for j in range(5):
+            axs[i].xaxis.get_minorticklabels()[j].set_y(-.02)
+
+        if not logy:
+            axs[i].yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+            axs[i].yaxis.set_minor_locator(MultipleLocator(.2))
+            axs[i].yaxis.set_minor_locator(MultipleLocator(.1))
+            axs[i].set_ylim([-0.05, 1.05])
+        else:
+            axs[i].yaxis.set_major_locator(LogLocator(base=10, numticks=100))
+            axs[i].yaxis.set_minor_locator(
+                LogLocator(base=10, subs=np.arange(2, 10) * .1, numticks=100))
+
+        axs[i].set_title(fr'$\sigma$={sig_vec[i]:.2f}')
+        axs[i].get_legend().remove()
+
+    fig.set_dpi(600.0)
+    plt.savefig(f'{bdir}/current_output/plots/' + fn + '_swap.pdf',
+                pad_inches=0)
+    plt.show()
+
+
+def gen_failure_plot(cols, dfs_mean, ylab, labels, fn='temp', colors=None):
+    """Function to generate plots of data-driven dynamics results."""
+    if colors is None:
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    linetype = ['solid', 'dashed', 'dotted']
+
+    # Set up figure
+    fig, ax = plt.subplots(1, len(dfs_mean), sharey=True)
+    fig.set_size_inches(1.75, 2)
+
+    # Plot results as a function of sample size
+    df_new = dfs_mean[i][cols]
+    df1 = pd.melt(df_new.reset_index(), id_vars='index')
+    df1.rename(columns={'index': 'sigma', 'value': 'mean'}, inplace=True)
+
+    for j, key in enumerate(cols):
+        df1[df1['variable'] == key].plot('sigma',
+                                         'mean',
+                                         label=labels[key],
+                                         ax=ax,
+                                         marker='.',
+                                         color=colors[j],
+                                         linestyle=linetype[j])
+
+    # Format x-axis
+    ax.semilogx()
+    ax.set_xlabel(r'$\sigma$')
+    ax.grid(True, which='major', color='gray')
+    ax.set_xticks([0.001, 0.01, .1, 1])
+    ax.get_legend().remove()
+    ax.xaxis.set_minor_locator(
+        LogLocator(base=10, subs=np.arange(2, 10) * .1, numticks=100))
+
+    # Format y-axis
+    ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    ax.yaxis.set_minor_locator(MultipleLocator(.2))
+    ax.yaxis.set_minor_locator(MultipleLocator(.1))
+    ax.set_ylim([-0.05, 1.05])
+    ax.set_title(ylab)
+
     fig.set_dpi(600.0)
     plt.savefig(f'{bdir}/current_output/plots/' + fn + '.pdf', pad_inches=0)
     plt.show()
-    """Plot the results as a function of noise level."""
-    if len(dfs_mean) > 1:
-        fig, axs = plt.subplots(1, len(dfs_sig), sharey=True)
-        fig.set_size_inches(1.75 * len(dfs_sig), 2)
-        if type(axs) is not np.ndarray:
-            axs = [axs]
-        # Reorganize datafame to more easily plot
-        for i in range(len(dfs_sig)):
-            df1 = dfs_sig[i]
-            for j, key in enumerate(cols):
-                if logy:
-                    df1[df1['variable'] == key].plot('N',
-                                                     'mean',
-                                                     yerr='std',
-                                                     label=labels[key],
-                                                     ax=axs[i],
-                                                     marker='.',
-                                                     color=colors[j],
-                                                     linestyle=linetype[j])
-                else:
-                    df1[df1['variable'] == key].plot('N',
-                                                     'mean',
-                                                     label=labels[key],
-                                                     ax=axs[i],
-                                                     marker='.',
-                                                     color=colors[j],
-                                                     linestyle=linetype[j])
-            if logy:
-                axs[i].loglog()
-            else:
-                axs[i].semilogx()
-
-            if i == 0:
-                axs[i].set_ylabel(ylabel, labelpad=ypad)
-
-            axs[i].set_xlabel('N')
-            axs[i].grid(True, which='major', color='gray')
-            axs[i].set_xticks([1000])
-            axs[i].set_xticks([250, 500, 2000, 4000, 8000], minor=True)
-            axs[i].set_xticklabels([1000], rotation=45)
-            axs[i].set_xticklabels([250, 500, 2000, 4000, 8000],
-                                   minor=True,
-                                   rotation=45)
-            for j in range(5):
-                axs[i].xaxis.get_minorticklabels()[j].set_y(-.02)
-
-            if not logy:
-                axs[i].yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
-                axs[i].yaxis.set_minor_locator(MultipleLocator(.2))
-                axs[i].yaxis.set_minor_locator(MultipleLocator(.1))
-                axs[i].set_ylim([-0.05, 1.05])
-            else:
-                axs[i].yaxis.set_major_locator(
-                    LogLocator(base=10, numticks=100))
-                axs[i].yaxis.set_minor_locator(
-                    LogLocator(base=10,
-                               subs=np.arange(2, 10) * .1,
-                               numticks=100))
-
-            axs[i].set_title(fr'$\sigma$={sig_vec[i]:.2f}')
-            axs[i].get_legend().remove()
-
-        fig.set_dpi(600.0)
-        plt.savefig(f'{bdir}/current_output/plots/' + fn + '_swap.pdf',
-                    pad_inches=0)
-        plt.show()
 
 
 def gen_plot_set(cols_temp,
@@ -310,33 +305,47 @@ def gen_plot_set(cols_temp,
                  error_type='c',
                  ylabel_start='',
                  colors=None,
-                 swap=False,
-                 logy=True,
-                 include_std=True,
-                 ypad=4):
+                 save_legend=False):
     """Function to generate plots of data-driven dynamics results."""
     if colors is None:
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-
     linetype = ['solid', 'dashed', 'dotted']
-    """Plot the results as a function of noise level."""
+
+    # Set figure size depending on figure type
     if error_type == 'du' or error_type == 'us':
-        fig, axs = plt.subplots(1, 3, sharey=True)
-        for i in range(np.size(axs)):
-            axs[i].set_xlim(10**(-3.2), 10**(0.2))
-        fig.set_size_inches(5.25, 2)
+        if system == '5':
+            fig, axs = plt.subplots(1, m, sharey=True)
+            fig.set_size_inches(1.75 * m, 2)
+        else:
+            fig, axs = plt.subplots(1, 3, sharey=True)
+            for i in range(np.size(axs)):
+                axs[i].set_xlim(10**(-3.2), 10**(0.2))
+            fig.set_size_inches(5.25, 2)
+    elif error_type == 'time':
+        fig, axs = plt.subplots(1, 1, sharey=True)
+        fig.set_size_inches(2, 2)
+        axs = [axs]
+        axs[0].set_ylim(10**(-2), 25)
     else:
         fig, axs = plt.subplots(1, m, sharey=True)
         fig.set_size_inches(1.75 * m, 2)
 
-    # Reorganize datafame to more easily plot
+    # Generate plot for each state variable
     for i in range(m):
+
+        # Specify which errors need to be plotted
         if error_type == 'c':
             cols = [f'c{i + 1}_' + lab for lab in cols_temp]
         if error_type == 'u' or error_type == 'us':
             cols = [f'u{i + 1}_' + lab for lab in cols_temp]
         if error_type == 'du':
             cols = [f'du{i + 1}_' + lab for lab in cols_temp]
+        if error_type == 'time':
+            cols = np.copy(cols_temp)
+            if i > 0:
+                break
+
+        # Reorganize dataframes for easier plotting
         df_new = df_mean[cols]
         df1 = pd.melt(df_new.reset_index(), id_vars='index')
         df1.rename(columns={'index': 'sigma', 'value': 'mean'}, inplace=True)
@@ -344,6 +353,8 @@ def gen_plot_set(cols_temp,
         df2 = pd.melt(df_std_new.reset_index(), id_vars='index')
         df2.rename(columns={'index': 'sigma', 'value': 'std'}, inplace=True)
         df1['std'] = df2['std']
+
+        # Enumerate through cols vector and plot associated error
         for j, key in enumerate(cols):
             key_old = cols_temp[j]
             df1[df1['variable'] == key].plot('sigma',
@@ -356,6 +367,7 @@ def gen_plot_set(cols_temp,
                                              linestyle=linetype[j])
         axs[i].get_legend().remove()
 
+    # Set y-axis label
     if error_type == 'c':
         ylabel_add = r'Relative $\bm{c}_k$ error'
     if error_type == 'u':
@@ -364,59 +376,58 @@ def gen_plot_set(cols_temp,
         ylabel_add = r'Relative $\dot{\bm{u}}_k$ error'
     if error_type == 'us':
         ylabel_add = r'Relative $\tilde{\bm{u}}_k$ error'
+    if error_type == 'time':
+        ylabel_add = 'Prediction time (s)'
     axs[0].set_ylabel(f'{ylabel_start}{ylabel_add}')
 
+    # Format plot
     for i in range(np.size(axs)):
-        axs[i].loglog()
+
         axs[i].set_xlabel(r'$\sigma$')
+        axs[i].loglog()
         axs[i].grid(True, which='major', color='gray')
-        axs[i].set_xticks([0.001, 0.01, .1, 1])
+        if error_type == 'time':
+            axs[i].set_xticks([0.01, 0.1, 1, 10])
+        else:
+            axs[i].set_xticks([0.001, 0.01, .1, 1])
         axs[i].yaxis.set_major_locator(LogLocator(base=10, numticks=100))
         axs[i].yaxis.set_minor_locator(
             LogLocator(base=10, subs=np.arange(2, 10) * .1, numticks=100))
         axs[i].xaxis.set_minor_locator(
             LogLocator(base=10, subs=np.arange(2, 10) * .1, numticks=100))
         axs[i].set_title(rf'$k={i + 1}$')
+        # Hide axes that are redundant
         if i > m - 1:
-            # hide axis
             axs[i].get_xaxis().set_visible(False)
             axs[i].get_yaxis().set_visible(False)
             for spine in ['top', 'right', 'left', 'bottom']:
                 axs[i].spines[spine].set_visible(False)
 
-    # Save legend as separate image
+    # Pull out legend content to be saved later
     label_params = axs[0].get_legend_handles_labels()
+
+    # Save main figure
     fig.set_dpi(600.0)
     plt.savefig(f'{bdir}/current_output/plots/' + fn + '.pdf', pad_inches=0)
     plt.show()
 
-    # Make legend figures
-    collist = '_'.join(cols_temp)
-    figl, axl = plt.subplots()
-    axl.axis(False)
-    legend = axl.legend(*label_params,
-                        loc="center",
-                        bbox_to_anchor=(0.5, 0.5),
-                        ncol=1,
-                        handlelength=4,
-                        fontsize=8)
-    legend_fig = legend.figure
-    legend_fig.canvas.draw()
-    bbox = legend.get_window_extent()
-    bbox = bbox.from_extents(*(bbox.extents + np.array([-3, -3, 3, 3])))
-    bbox = bbox.transformed(legend_fig.dpi_scale_trans.inverted())
-    legend_fig.savefig(
-        f'{bdir}/current_output/plots/legends/legend_{collist}.pdf',
-        bbox_inches=bbox)
+    if save_legend:
+        plot_legend(cols_temp, label_params, type='v')
+        plot_legend(cols_temp, label_params, type='h')
 
-    # Make legend figures (horizontal)
-    collist = '_'.join(cols_temp)
-    figl, axl = plt.subplots()
+
+def plot_legend(cols, label_params, type='h'):
+    collist = '_'.join(cols)
+    if type == 'v':
+        ncol = 1
+    else:
+        ncol = len(cols)
+    axl = plt.subplots()[1]
     axl.axis(False)
     legend = axl.legend(*label_params,
                         loc="center",
                         bbox_to_anchor=(0.5, 0.5),
-                        ncol=len(collist),
+                        ncol=ncol,
                         handlelength=4,
                         fontsize=8)
     legend_fig = legend.figure
@@ -425,8 +436,9 @@ def gen_plot_set(cols_temp,
     bbox = bbox.from_extents(*(bbox.extents + np.array([-3, -3, 3, 3])))
     bbox = bbox.transformed(legend_fig.dpi_scale_trans.inverted())
     legend_fig.savefig(
-        f'{bdir}/current_output/plots/legends/legend_{collist}_h.pdf',
+        f'{bdir}/current_output/plots/legends/legend_{collist}_{type}.pdf',
         bbox_inches=bbox)
+    plt.close(legend_fig)
 
 
 # %%
@@ -470,6 +482,14 @@ if system == '4':
     ttrain = 10
     N_vec = [1000]
     SysName = r'\textbf{R\"{o}ssler}'
+if system == '5':
+    nu_vec = [1e-6, 0.0001, 0.01, 1]
+    m = 6
+    compare_with_wsindy = True
+    wsindy_dir = f'{bdir}/wsindy_results/Lorenz_96'
+    ttrain = 5
+    N_vec = [2000]
+    SysName = r'\textbf{Lorenz 96}'
 
 # %% Parse through results and save to dataframe
 
@@ -498,22 +518,34 @@ if compare_with_wsindy:
     for i, N in enumerate(N_vec):
 
         mean_wsindy = pd.read_csv(
-            f'{wsindy_dir}/{base_dir}_ttrain=10_N={N}_mean_coef_err.csv',
+            f'{wsindy_dir}/{base_dir}_ttrain={ttrain}_N={N}_mean_coef_err.csv',
             header=None,
             index_col=0)
         std_wsindy = pd.read_csv(
-            f'{wsindy_dir}/{base_dir}_ttrain=10_N={N}_std_coef_err.csv',
+            f'{wsindy_dir}/{base_dir}_ttrain={ttrain}_N={N}_std_coef_err.csv',
             header=None,
             index_col=0)
 
         mean_u_wsindy = pd.read_csv(
-            f'{wsindy_dir}/{base_dir}_ttrain=10_N={N}_mean_u_err.csv',
+            f'{wsindy_dir}/{base_dir}_ttrain={ttrain}_N={N}_mean_u_err.csv',
             header=None,
             index_col=0)
         std_u_wsindy = pd.read_csv(
-            f'{wsindy_dir}/{base_dir}_ttrain=10_N={N}_std_u_err.csv',
+            f'{wsindy_dir}/{base_dir}_ttrain={ttrain}_N={N}_std_u_err.csv',
             header=None,
             index_col=0)
+
+        if system == '5':
+            mean_t_pred_wsindy = pd.read_csv(
+                (f'{wsindy_dir}/{base_dir}_ttrain={ttrain}_N={N}'
+                 '_mean_t_pred.csv'),
+                header=None,
+                index_col=0)
+            std_t_pred_wsindy = pd.read_csv(
+                (f'{wsindy_dir}/{base_dir}_ttrain={ttrain}_N={N}'
+                 '_std_t_pred.csv'),
+                header=None,
+                index_col=0)
 
         n_complete = mean_u_wsindy.loc[nu_vec][m + 1].to_numpy()
         dfs_mean[i]['wsindy_failed'] = n_complete / reps
@@ -531,9 +563,17 @@ if compare_with_wsindy:
             dfs_std[i][f'u{j}_WSINDY'] = stdui
             dfs_sem[i][f'u{j}_WSINDY'] = semui
 
+        if system == '5':
+            meanti = mean_t_pred_wsindy.loc[nu_vec][1].to_numpy() - 5
+            stdti = std_t_pred_wsindy.loc[nu_vec][1].to_numpy()
+            semti = std_t_pred_wsindy.loc[nu_vec][1].to_numpy() / np.sqrt(reps)
+            dfs_mean[i]['t_fail_WSINDY'] = meanti
+            dfs_std[i]['t_fail_WSINDY'] = stdti
+            dfs_sem[i]['t_fail_WSINDY'] = semti
+
         # dfs_mean[i][dfs_mean[i] > 1] = 1
 
-# %% [markdown]
+    # %% [markdown]
 
 # # Plot errors
 
@@ -553,7 +593,8 @@ if len(dfs_mean) == 1:
                  dfs_sem[0],
                  labels=labels_c,
                  fn=f'{base_dir}/{base_dir}_coef_summary_err',
-                 error_type='c')
+                 error_type='c',
+                 save_legend=True)
 
     cols_c_socp = ['socp_sm', 'socp_theory']
     labels_c_socp = {
@@ -566,7 +607,8 @@ if len(dfs_mean) == 1:
                  labels=labels_c_socp,
                  fn=f'{base_dir}/{base_dir}_coef_socp_summary_err',
                  error_type='c',
-                 colors=[colors[0], colors[3]])
+                 colors=[colors[0], colors[3]],
+                 save_legend=True)
 
     # Reconstruction Error (sem)
     cols_u = ['pred_socp_sm', 'pred_lasso', 'WSINDY']
@@ -605,7 +647,8 @@ if len(dfs_mean) == 1:
                  ylabel_start=f'{SysName}\n\n',
                  labels=labels_du,
                  fn=f'{base_dir}/{base_dir}_du_summary_err',
-                 error_type='du')
+                 error_type='du',
+                 save_legend=True)
 
     # Smoothing Error (std)
     cols_smooth = ['smooth_proj', 'smooth_GP']
@@ -616,7 +659,52 @@ if len(dfs_mean) == 1:
                  ylabel_start=f'{SysName}\n\n',
                  labels=labels_smooth,
                  fn=f'{base_dir}/{base_dir}_smooth_summary_err',
-                 error_type='us')
+                 error_type='us',
+                 save_legend=True)
+
+    # Prediction ability
+    if system == '5':
+        cols_t = ['t_fail_socp_sm', 't_fail_lasso', 't_fail_WSINDY']
+        labels_t = {
+            't_fail_socp_sm': 'DSINDy',
+            't_fail_lasso': r'$\ell_1$-SINDy',
+            't_fail_WSINDY': 'WSINDy'
+        }
+        gen_plot_set(cols_t,
+                     dfs_mean[0],
+                     dfs_sem[0],
+                     labels=labels_t,
+                     fn=f'{base_dir}/{base_dir}_t_prediction',
+                     error_type='time')
+
+    # Failed solution
+    cols_fail = ['socp_failed', 'lasso_failed', 'wsindy_failed']
+    labels_fail = {
+        'lasso_failed': r'$\ell_1$-SINDy',
+        'socp_failed': 'DSINDy',
+        'wsindy_failed': 'WSINDy',
+        'socp_theory_failed': 'DSINDy (theory)'
+    }
+    gen_failure_plot(cols_fail,
+                     dfs_mean,
+                     'Failure rate',
+                     labels_fail,
+                     fn=f'{base_dir}/{base_dir}_failed')
+
+    # Failed solution
+    cols_fail = ['socp_failed', 'socp_theory_failed']
+    labels_fail = {
+        'lasso_failed': r'$\ell_1$-SINDy',
+        'socp_failed': 'DSINDy',
+        'wsindy_failed': 'WSINDy',
+        'socp_theory_failed': 'DSINDy (theory)'
+    }
+    gen_failure_plot(cols_fail,
+                     dfs_mean,
+                     'Failure rate',
+                     labels_fail,
+                     fn=f'{base_dir}/{base_dir}_socp_failed',
+                     colors=[colors[0], colors[3]])
 
 else:
 
@@ -719,42 +807,43 @@ else:
                  labels=labels_socp_u,
                  fn=f'{base_dir}/{base_dir}_u{i}_socp_err',
                  colors=[colors[0], colors[3]])
+    # Failed solution
+    cols_fail = ['socp_failed', 'lasso_failed', 'wsindy_failed']
+    labels_fail = {
+        'lasso_failed': r'$\ell_1$-SINDy',
+        'socp_failed': 'DSINDy',
+        'wsindy_failed': 'WSINDy',
+        'socp_theory_failed': 'DSINDy (theory)'
+    }
+    gen_plot(cols_fail,
+             dfs_mean,
+             dfs_std,
+             'Failure rate',
+             N_vec,
+             labels=labels_fail,
+             fn=f'{base_dir}/{base_dir}_failed',
+             logy=False,
+             include_std=False,
+             ypad=2)
 
-# Failed solution
-cols_fail = ['socp_failed', 'lasso_failed', 'wsindy_failed']
-labels_fail = {
-    'lasso_failed': r'$\ell_1$-SINDy',
-    'socp_failed': 'DSINDy',
-    'wsindy_failed': 'WSINDy',
-    'socp_theory_failed': 'DSINDy (theory)'
-}
-gen_plot(cols_fail,
-         dfs_mean,
-         dfs_std,
-         'Failure rate',
-         N_vec,
-         labels=labels_fail,
-         fn=f'{base_dir}/{base_dir}_failed',
-         logy=False,
-         include_std=False,
-         ypad=2)
+    # Failed solution
+    cols_fail = ['socp_failed', 'socp_theory_failed']
+    labels_fail = {
+        'lasso_failed': r'$\ell_1$-SINDy',
+        'socp_failed': 'DSINDy',
+        'wsindy_failed': 'WSINDy',
+        'socp_theory_failed': 'DSINDy (theory)'
+    }
+    gen_plot(cols_fail,
+             dfs_mean,
+             dfs_std,
+             'Failure rate',
+             N_vec,
+             labels=labels_fail,
+             fn=f'{base_dir}/{base_dir}_socp_failed',
+             logy=False,
+             include_std=False,
+             ypad=2,
+             colors=[colors[0], colors[3]])
 
-# Failed solution
-cols_fail = ['socp_failed', 'socp_theory_failed']
-labels_fail = {
-    'lasso_failed': r'$\ell_1$-SINDy',
-    'socp_failed': 'DSINDy',
-    'wsindy_failed': 'WSINDy',
-    'socp_theory_failed': 'DSINDy (theory)'
-}
-gen_plot(cols_fail,
-         dfs_mean,
-         dfs_std,
-         'Failure rate',
-         N_vec,
-         labels=labels_fail,
-         fn=f'{base_dir}/{base_dir}_socp_failed',
-         logy=False,
-         include_std=False,
-         ypad=2,
-         colors=[colors[0], colors[3]])
+# %%

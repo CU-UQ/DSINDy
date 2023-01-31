@@ -4,6 +4,7 @@ Dockerfile
 /DSINDy.egg-info
 /current_output
 /eqndiscov/__pycache__
-/output/*
-!/output/paper_noise_realizations
-
+/output
+/wsindy_results
+/paper_optimizations
+/notebooks/run_SOCP_and_IRW_Lasso.ipynb

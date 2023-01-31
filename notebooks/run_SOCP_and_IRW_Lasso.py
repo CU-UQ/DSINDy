@@ -61,15 +61,16 @@ datadir = arguments['datadir']
 get_GP = True
 if N == 8000:
     get_GP = False
+
 # %% tags=["remove_cell"]
 # For Testing
 bdir = '/home/jacqui/projects/DSINDy/'
-nu = 0.01  # noise level (variance)
-system = '2b'
-N = 1000  # number of samples
-ttrain = 10  # training time
-realization = 7
-datadir = f'{bdir}/paper_noise_realizations/Duffing/'
+nu = 1  # noise level (variance)
+system = '5'
+N = 2000  # number of samples
+ttrain = 5  # training time
+realization = 0
+datadir = f'{bdir}/paper_noise_realizations/Lorenz_96/'
 get_GP = True
 
 # %% [markdown]
@@ -81,6 +82,8 @@ get_GP = True
 description = f'system={system}_N={N}_nu={nu}_realization={realization}'
 sys_params, u0, d = odesys.get_system_values(system)
 tend = ttrain * 2  # testing time (includes initial trianing)
+if system == '5':
+    tend = 20
 tstep = 0.01  # step size for running ODE
 m = np.size(u0)
 p = int(sps.factorial(m + d) / (sps.factorial(m) * sps.factorial(d)))
@@ -131,15 +134,17 @@ utils.disp_table(pd.DataFrame.from_dict(err_dict_u_prior,
 if get_GP:
     pf.plot_smooth_states(u_proj, u_smooth, u, u_actual)
 
-# %% Plot of state+noise for presentation
+# %%  tags=["remove_cell"]
+#
+# Plot of state+noise for presentation
 
 cols = plt.rcParams['axes.prop_cycle'].by_key()['color']
 # Presentation figure
 for i in range(m):
     plt.plot(t, u[i], '.', label='Measurements')
     plt.plot(t, u_actual[i], label='Actual', color=cols[3])
-    plt.xlim([0, 10])
-    plt.ylim(-1.1, 1.5)
+    plt.xlim([0, ttrain])
+    # plt.ylim(-1.1, 1.5)
     plt.ylabel(fr'$u_{i+1}$')
     plt.xlabel(r'$t$')
     plt.legend()
@@ -153,8 +158,13 @@ for i in range(m):
 
 # %% tags=["remove_input"]
 
+amax = 100
+amin = 1e-12
+if system == '5':
+    amax = 100
+    amin = 1e-16
 startTime = time.time()
-opt_params_deriv = {'tol': 1e-12, 'a_min': 1e-12, 'a_max': 100}
+opt_params_deriv = {'tol': 1e-12, 'a_min': amin, 'a_max': amax}
 du = np.zeros((m, N))
 for i in range(m):
     du[i] = op.deriv_tik_reg(t,
@@ -378,10 +388,16 @@ Here I'm only showing plots for the first iteration of lasso.
 """
 
 # %%
+
+amax_lasso = 100
+amin_lasso = 1e-8
+if system == '5' and nu == 1:
+    amax_lasso = 1
+    amin_lasso = 1e-6
 lasso_opt_params = {
-    'a_min': 1e-8,
-    'a_max': 100,
-    'max_IRW_iter': 10,
+    'a_min': amin_lasso,
+    'a_max': amax_lasso,
+    'max_IRW_iter': 5,
     'max_iter': 100000,
     'tol': 1e-12
 }
@@ -444,21 +460,33 @@ utils.disp_table(pd.DataFrame.from_dict(c_err_dict,
 
 # %% tags=["remove_input"]
 
-t_test = np.arange(0, tend * 1.0001, tstep)
-idx_end_train = np.where(t_test == ttrain)[0][0]
+t_test_temp = np.arange(0, tend * 1.0001, tstep)
+idx_end_train = np.where(t_test_temp == ttrain)[0][0]
 
-out = solve_ivp(odesys.run_monomial_ode, [0, t_test[-1]],
+out = solve_ivp(odesys.run_monomial_ode, [0, t_test_temp[-1]],
                 u0,
                 args=[c_actual, d],
-                t_eval=t_test,
+                t_eval=t_test_temp,
                 rtol=1e-12,
                 atol=1e-12)
-u_actual_test = out.y
+
+# change IC
+change_IC = True
+if change_IC:
+    u0_test = out.y[:, np.where(out.t == ttrain)[0][0]]
+    u_actual_test = out.y[:, np.where(out.t == ttrain)[0][0]:]
+    t_test_start = ttrain
+    t_test = np.arange(t_test_start, tend + tstep / 2, tstep)
+else:
+    u0_test = np.copy(u0)
+    u_actual_test = out.y
+    t_test_start = 0
+    t_test = np.copy(t_test_temp)
 
 
-def run_ode(q, tend, u0, c, d, t_test):
+def run_ode(q, u0, c, d, t_test):
     """Function to run ode as separate process."""
-    out = solve_ivp(odesys.run_monomial_ode, [0, tend],
+    out = solve_ivp(odesys.run_monomial_ode, [t_test[0], t_test[-1]],
                     u0,
                     args=[c, d],
                     t_eval=t_test,
@@ -472,10 +500,11 @@ for key, val in c_dict.items():
     que = multiprocessing.Queue()
     pro = multiprocessing.Process(target=run_ode,
                                   name="Run_ODE",
-                                  args=(que, tend, u0, c_dict[key], d, t_test))
+                                  args=(que, u0_test, c_dict[key], d,
+                                        t_test - t_test[0]))
     pro.start()
 
-    runtime = 100
+    runtime = 1000
     for time_iters in range(runtime + 1):
         # Check if queue has results, if not wait for a second
         if not que.empty():
@@ -497,6 +526,7 @@ for key, val in c_dict.items():
 
 # Save relative L2 error
 u_err_dict = {}
+t_fail_dict = {}
 
 fig1 = go.Figure()
 fig2 = go.Figure()
@@ -510,11 +540,22 @@ for key, val in sol_dict.items():
         u_err_dict[err_key] = np.repeat(-1, m)
         u_err_dict[err_key_train] = np.repeat(-1, m)
         u_err_dict[err_key_test] = np.repeat(-1, m)
+        t_fail_dict[err_key] = -1
     else:
         u_cur = val.y
 
+        idx = 1
+        u_err = utils.rel_err(u_cur[:, :idx], u_actual_test[:, :idx])
+        while np.max(u_err) < .1:
+            idx += 1
+            if idx >= np.size(u_cur, 1) - 1:
+                break
+            u_err = utils.rel_err(u_cur[:, :idx], u_actual_test[:, :idx])
+        t_fail_dict[err_key] = tstep * np.round(t_test[idx] / tstep)
+
         if np.size(u_cur, 1) == np.size(u_actual_test, 1):
             u_err_dict[err_key] = utils.rel_err(u_cur, u_actual_test)
+
             u_err_dict[err_key_train] = utils.rel_err(
                 u_cur[:, :idx_end_train], u_actual_test[:, :idx_end_train])
             u_err_dict[err_key_test] = utils.rel_err(
@@ -572,7 +613,7 @@ for i in range(m):
 # pro.start()
 
 # sol_dict['WSINDy'] = que.get()
-# %%
+# %% tags=["remove_cell"]
 
 for i in range(m):
     plt.figure(figsize=(4, 2))
@@ -588,10 +629,11 @@ for i in range(m):
         if sol_dict[key] == 'Failed':
             continue
         u_cur = val.y
-        plt.plot(t_test, u_cur[i], label=label)
+        plt.plot(t_test[:np.size(u_cur[i])], u_cur[i], label=label)
     plt.plot(t_test, u_actual_test[i], label='Actual', linestyle='dashed')
-    plt.xlim([0, 20])
-    plt.ylim(-1.1, 1.5)
+    plt.xlim([0, tend])
+    # plt.ylim(-1.1, 1.5)
+    # plt.ylim(-10, 10)
     plt.ylabel(fr'$u_{i+1}$')
     plt.xlabel(r'$t$')
     plt.legend(ncol=2)
@@ -704,6 +746,11 @@ def append_value(data, string, i):
     return [(string + k, v[i]) for k, v in data.items()]
 
 
+def append_value_2(data, string):
+    """Return list of tuples with with label and value."""
+    return [(string + k, v) for k, v in data.items()]
+
+
 summary_dict = {
     **dict([
         append_value(c_err_dict, f'c{i+1}_', i)[j] for j in range(
@@ -720,6 +767,10 @@ summary_dict = {
     **dict([
         append_value(err_dict_du, f'du{i+1}_', i)[j] for j in range(
             len(err_dict_du)) for i in range(m)
+    ]),
+    **dict([
+        append_value_2(t_fail_dict, 't_fail_')[j] for j in range(
+            len(t_fail_dict))
     ])
 }
 
@@ -734,3 +785,5 @@ if not os.path.exists(out_dir):
 summary_df.to_csv(f'{out_dir}/{base_name}_realization={realization}.csv',
                   header=False,
                   index=False)
+
+# %%

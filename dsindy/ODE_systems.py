@@ -8,7 +8,7 @@ import dsindy.monomial_library_utils as mlu
 
 
 def get_coefficient_vector(system, sys_params, m, p):
-    """Get coefficinet vector for a given system."""
+    """Get coefficient vector for a given system."""
     c = np.zeros((m, p))
     if system == '1':
         c[0, 2] = 1
@@ -38,6 +38,32 @@ def get_coefficient_vector(system, sys_params, m, p):
         c[2, 0] = beta
         c[2, 3] = -kappa
         c[2, 6] = 1
+    if system == '5':
+        F = sys_params['F']
+        mi_mat = mlu.make_mi_mat(m, 2)
+
+        # Set forcing function
+        c[:, 0] = F
+
+        # Iterate through states and set coefficients
+        for i in range(m):
+            i_minus1 = i - 1 if i - 1 >= 0 else m - 1
+            i_minus2 = i - 2 if i - 2 >= 0 else m - 2 + i
+            i_plus1 = i + 1 if i + 1 < m else 0
+            idx1 = np.where(
+                np.all(mi_mat == (np.eye(1, m, i_plus1) +
+                                  np.eye(1, m, i_minus1)),
+                       axis=1))[0][0]
+            idx2 = np.where(
+                np.all(mi_mat == (np.eye(1, m, i_minus2) +
+                                  np.eye(1, m, i_minus1)),
+                       axis=1))[0][0]
+            idx3 = i + 1
+
+            c[i, idx1] = 1
+            c[i, idx2] = -1
+            c[i, idx3] = -1
+
     return (c)
 
 
@@ -114,6 +140,10 @@ def get_system_values(system):
         sys_params = {'alpha': .2, 'beta': .2, 'kappa': 5.7}
         u0 = [0, -5, 0]
         d = 2
+    if system == '5':
+        sys_params = {'F': 8}
+        u0 = [1, 8, 8, 8, 8, 8]
+        d = 3
 
     return (sys_params, u0, d)
 

@@ -5,12 +5,13 @@ Possible ODE systems include:
     (2) Duffing Oscillator
     (3) Van der Pol Oscillator
     (4) Rossler Attractor
+    (5) Lorenz 96
 
 The actual, noisy, Gaussian Process smoothed, and projection-based smoothed
 results are saved to .csv file.
 
 """
-
+# %%
 import os
 import random
 import numpy as np
@@ -20,7 +21,7 @@ import pandas as pd
 import dsindy.denoising_functions as df
 import dsindy.ODE_systems as odesys
 import dsindy.utils as utils
-import plotly.graph_objects as go
+# import plotly.graph_objects as go
 
 
 def run_replications(system,
@@ -42,13 +43,15 @@ def run_replications(system,
         indir = f'{bdir}/paper_noise_realizations/Van_der_Pol/'
     if system[0] == '4':
         indir = f'{bdir}/paper_noise_realizations/Rossler/'
+    if system[0] == '5':
+        indir = f'{bdir}/paper_noise_realizations/Lorenz96/'
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)
 
     # Find the noise level/random seed vectors
-    # nu_vec = [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1]
-    nu_vec = [0.0001, 0.01]
+    nu_vec = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1]
+    # nu_vec = [1]
 
     if system == '2a' and N == 1000 and ttrain == 10:
         rand_seed = 991182
@@ -74,6 +77,11 @@ def run_replications(system,
         rand_seed = 464570
     if system == '4' and N == 2000 and ttrain == 10:
         rand_seed = 403611
+
+    if system == '5' and N == 1000 and ttrain == 5:
+        rand_seed = 102921
+    if system == '5' and N == 2000 and ttrain == 5:
+        rand_seed = 102922
 
     # Set random seeds for system
     random.seed(rand_seed)
@@ -152,10 +160,10 @@ def run_replications(system,
                                              center_Theta=True,
                                              check_diverge=check_diverge)[0]
 
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=t, y=u_proj[0]))
-            fig.add_trace(go.Scatter(x=t, y=u_proj[1]))
-            fig.show()
+            # fig = go.Figure()
+            # fig.add_trace(go.Scatter(x=t, y=u_proj[0]))
+            # fig.add_trace(go.Scatter(x=t, y=u_proj[1]))
+            # fig.show()
 
             # At first iteration add the actual resutlts
             if j == 0:
@@ -284,3 +292,21 @@ run_replications(system,
                  start=start,
                  add_to_file=add_to_file,
                  bdir=bdir)
+
+# %%
+system = '5'
+N = 2000  # Number of samples
+ttrain = 5  # Training time
+start = 0
+add_to_file = False
+bdir = '/home/jacqui/projects/DSINDy/'
+
+run_replications(system,
+                 N,
+                 ttrain,
+                 start=start,
+                 add_to_file=add_to_file,
+                 replications=30,
+                 bdir=bdir)
+
+# %%
