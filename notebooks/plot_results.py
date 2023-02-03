@@ -42,10 +42,10 @@ The plots show the mean results of these 10 realizations.
 # %%
 
 # system = '2a'
-system = '2b'
+# system = '2b'
 # system = '3'
 # system = '4'
-# system = '5'
+system = '5'
 
 bdir = '/home/jacqui/projects/DSINDy/'
 
@@ -96,21 +96,28 @@ def generate_df(nu_vec, N=1000, ttrain=10, system='2', reps=30):
                     print(f'Results for nu={nu} realization={i} do not exist.')
                     continue
 
+        np.min(err_df.loc['t_fail_lasso'][err_df.loc['t_fail_lasso'] > 0])
+
         n = np.size(err_df, 1)
 
         # For 5th system we include time till > 10% error
-        if system == '5':
-            err_df.loc['t_fail_socp_sm'] = err_df.loc['t_fail_socp_sm'] - 5
-            err_df.loc[
-                't_fail_socp_theory'] = err_df.loc['t_fail_socp_theory'] - 5
-            err_df.loc['t_fail_lasso'] = err_df.loc['t_fail_lasso'] - 5
 
+        if system == '5':
+            t_keys = ['t_fail_lasso', 't_fail_socp_sm', 't_fail_socp_theory']
+            for key in t_keys:
+                # If sim failed set prediction time to sim start
+                err_df.loc[key][err_df.loc[key] == -1] = 5
+                # Minus off simulation start time of 5 with 0.02 correction
+                err_df.loc[key] = err_df.loc[key] - 5.02
+
+        err_df.loc['c1_lasso']
         # Look at system prediction results and check for failure
         key_ends = ['_pred_socp_sm', '_pred_socp_theory', '_pred_lasso']
         for key_end in key_ends:
             keyset = []
             for k in range(m):
-                keyset = keyset + [f'u{k+1}{key_end}']
+                key_current = f'u{k+1}{key_end}'
+                keyset = keyset + [key_current]
 
             err_df[err_df.loc[keyset] > 1] = 1
             err_df[err_df.loc[keyset] == -1] = 1
@@ -305,17 +312,19 @@ def gen_plot_set(cols_temp,
                  error_type='c',
                  ylabel_start='',
                  colors=None,
-                 save_legend=False):
+                 save_legend=False,
+                 mstart=0):
     """Function to generate plots of data-driven dynamics results."""
     if colors is None:
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
     linetype = ['solid', 'dashed', 'dotted']
 
+    m_eff = int(min(m - mstart, 3))
     # Set figure size depending on figure type
     if error_type == 'du' or error_type == 'us':
         if system == '5':
-            fig, axs = plt.subplots(1, m, sharey=True)
-            fig.set_size_inches(1.75 * m, 2)
+            fig, axs = plt.subplots(1, m_eff, sharey=True)
+            fig.set_size_inches(1.75 * m_eff, 2)
         else:
             fig, axs = plt.subplots(1, 3, sharey=True)
             for i in range(np.size(axs)):
@@ -325,21 +334,21 @@ def gen_plot_set(cols_temp,
         fig, axs = plt.subplots(1, 1, sharey=True)
         fig.set_size_inches(2, 2)
         axs = [axs]
-        axs[0].set_ylim(10**(-2), 25)
+        axs[0].set_ylim(10**(-2.1), 25)
     else:
-        fig, axs = plt.subplots(1, m, sharey=True)
-        fig.set_size_inches(1.75 * m, 2)
+        fig, axs = plt.subplots(1, m_eff, sharey=True)
+        fig.set_size_inches(1.75 * m_eff, 2)
 
     # Generate plot for each state variable
-    for i in range(m):
+    for i in range(m_eff):
 
         # Specify which errors need to be plotted
         if error_type == 'c':
-            cols = [f'c{i + 1}_' + lab for lab in cols_temp]
+            cols = [f'c{i + 1 + mstart}_' + lab for lab in cols_temp]
         if error_type == 'u' or error_type == 'us':
-            cols = [f'u{i + 1}_' + lab for lab in cols_temp]
+            cols = [f'u{i + 1 + mstart}_' + lab for lab in cols_temp]
         if error_type == 'du':
-            cols = [f'du{i + 1}_' + lab for lab in cols_temp]
+            cols = [f'du{i + 1 + mstart}_' + lab for lab in cols_temp]
         if error_type == 'time':
             cols = np.copy(cols_temp)
             if i > 0:
@@ -377,7 +386,7 @@ def gen_plot_set(cols_temp,
     if error_type == 'us':
         ylabel_add = r'Relative $\tilde{\bm{u}}_k$ error'
     if error_type == 'time':
-        ylabel_add = 'Prediction time (s)'
+        ylabel_add = 'Prediction time'
     axs[0].set_ylabel(f'{ylabel_start}{ylabel_add}')
 
     # Format plot
@@ -386,18 +395,18 @@ def gen_plot_set(cols_temp,
         axs[i].set_xlabel(r'$\sigma$')
         axs[i].loglog()
         axs[i].grid(True, which='major', color='gray')
-        if error_type == 'time':
-            axs[i].set_xticks([0.01, 0.1, 1, 10])
-        else:
-            axs[i].set_xticks([0.001, 0.01, .1, 1])
+        # if error_type == 'time':
+        #     axs[i].set_xticks([0.01, 0.1, 1, 10])
+        # else:
+        axs[i].set_xticks([0.001, 0.01, .1, 1])
         axs[i].yaxis.set_major_locator(LogLocator(base=10, numticks=100))
         axs[i].yaxis.set_minor_locator(
             LogLocator(base=10, subs=np.arange(2, 10) * .1, numticks=100))
         axs[i].xaxis.set_minor_locator(
             LogLocator(base=10, subs=np.arange(2, 10) * .1, numticks=100))
-        axs[i].set_title(rf'$k={i + 1}$')
+        axs[i].set_title(rf'$k={i + 1 + mstart}$')
         # Hide axes that are redundant
-        if i > m - 1:
+        if i > m_eff - 1:
             axs[i].get_xaxis().set_visible(False)
             axs[i].get_yaxis().set_visible(False)
             for spine in ['top', 'right', 'left', 'bottom']:
@@ -483,10 +492,24 @@ if system == '4':
     N_vec = [1000]
     SysName = r'\textbf{R\"{o}ssler}'
 if system == '5':
-    nu_vec = [1e-6, 0.0001, 0.01, 1]
+    nu_vec = [1e-6, 0.0001, 0.001, 0.01, 0.1, 1]
     m = 6
     compare_with_wsindy = True
-    wsindy_dir = f'{bdir}/wsindy_results/Lorenz_96'
+    # # SLIGHTLY WORSE
+    # wsindy_dir = (f'{bdir}/wsindy_results/Lorenz_96/'
+    # 'alpha_loss=.8_overlap_frac=.1/')
+
+    # Best all around
+    wsindy_dir = (f'{bdir}/wsindy_results/Lorenz_96/'
+                  'alpha_loss=.4_overlap_frac=.1/')
+
+    # Bad at low noise (best at high noise, but not by much)
+    # wsindy_dir = (f'{bdir}/wsindy_results/Lorenz_96/'
+    # 'alpha_loss=.4_overlap_frac=.5/')
+
+    # # Bad all around
+    # wsindy_dir = (f'{bdir}/wsindy_results/Lorenz_96/'
+    # 'alpha_loss=.8_overlap_frac=.5/')
     ttrain = 5
     N_vec = [2000]
     SysName = r'\textbf{Lorenz 96}'
@@ -592,9 +615,18 @@ if len(dfs_mean) == 1:
                  dfs_mean[0],
                  dfs_sem[0],
                  labels=labels_c,
-                 fn=f'{base_dir}/{base_dir}_coef_summary_err',
+                 fn=f'{base_dir}/{base_dir}_coef_summary_err1',
                  error_type='c',
                  save_legend=True)
+    if system == '5':
+        gen_plot_set(cols_c,
+                     dfs_mean[0],
+                     dfs_sem[0],
+                     labels=labels_c,
+                     fn=f'{base_dir}/{base_dir}_coef_summary_err2',
+                     error_type='c',
+                     save_legend=True,
+                     mstart=3)
 
     cols_c_socp = ['socp_sm', 'socp_theory']
     labels_c_socp = {
@@ -846,4 +878,4 @@ else:
              ypad=2,
              colors=[colors[0], colors[3]])
 
-# %%
+    # %%

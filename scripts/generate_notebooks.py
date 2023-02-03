@@ -117,6 +117,6 @@ run_notebook_set(system,
                  start=0,
                  n_realizations=30,
                  ttrain=ttrain,
-                 nu_vec=[1])
+                 nu_vec=[.001])
 
 print('Code finished!')

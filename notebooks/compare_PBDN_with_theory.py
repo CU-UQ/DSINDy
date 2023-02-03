@@ -1,6 +1,6 @@
 """Compare numerical results with theoretical predicitons."""
 
-# Set up
+# %% Set up
 import os
 import numpy as np
 import numpy.linalg as la
@@ -13,6 +13,10 @@ import dsindy.denoising_functions as df
 import dsindy.ODE_systems as sys
 import dsindy.utils as utils
 import dsindy.monomial_library_utils as mlu
+
+import importlib
+
+importlib.reload(df)
 
 # Pull out matplotlib colors
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -33,7 +37,7 @@ plt.rc('legend', fontsize=5)  # fontsize of the legend
 system = '5'
 ttrain = 5
 N_vec = np.logspace(2, 4, 5).astype(int)
-# N_vec = np.logspace(2, 3, 3).astype(int)
+# N_vec = np.logspace(2, 3, 2).astype(int)
 alpha = .1
 max_iter = 1000
 out_dir = '/home/jacqui/projects/DSINDy/current_output/PSDN_Theory/'
@@ -56,7 +60,7 @@ P = int(sps.factorial(m + d) / (sps.factorial(m) * sps.factorial(d)))
 
 use_actual_P = True
 center_Theta = True
-N = 1000
+N = 2500
 t = np.linspace(0, ttrain, num=N)
 nu = 0.1
 # Look at larger noise for Lorenz 96
@@ -88,8 +92,7 @@ def get_error_with_increasing_N(nu,
                                 alpha=1,
                                 max_iter=1,
                                 center_Theta=False,
-                                intervals=1,
-                                realizations=10):
+                                realizations=50):
     """Obtain smoothing error at multiple values of N."""
     u_err_mean_vec = []
     u_err_std_vec = []
@@ -99,38 +102,36 @@ def get_error_with_increasing_N(nu,
     N_min = int(N_vec[0] / 10)
     N_max = int(N_vec[-1] * 10)
 
-    # Add theoretical values at N_Min\
-    t = np.linspace(0, ttrain, num=N_min)
-    # Find noisy/actual measurements and actual derivative/coef vector
+    # Add theoretical values at N_Min
     sigma = np.sqrt(nu)
-    u, u_actual, du_actual, c_actual = sys.setup_system(t,
-                                                        nu,
-                                                        d,
-                                                        system[0],
-                                                        sys_params=sys_params,
-                                                        u0=u0,
-                                                        seed=0)
+    u_actual = sys.setup_system(np.linspace(0, ttrain, num=N_min),
+                                nu,
+                                d,
+                                system[0],
+                                sys_params=sys_params,
+                                u0=u0)[1]
     u_err_theory_vec.append(
         np.sqrt(nu / la.norm(u_actual, axis=1)**2 * (P + 1)))
-    # u_err_mean_noise_vec.append(utils.rel_err(u, u_actual))
     u_err_mean_noise_vec.append(
         np.sqrt(nu * N_min) * 1 / la.norm(u_actual, axis=1))
+
     for i, N in enumerate(N_vec):
         u_err_vec = []
         u_err_noise_vec = []
+        t = np.linspace(0, ttrain, num=N)
+        u_actual = sys.setup_system(t,
+                                    nu,
+                                    d,
+                                    system[0],
+                                    sys_params=sys_params,
+                                    u0=u0)[1]
+        seed = seed_vec[i]
         for j in range(realizations):
-            seed = seed_vec[i]
-            t = np.linspace(0, ttrain, num=N)
-            # Find noisy/actual measurements and actual derivative/coef vector
-            sigma = np.sqrt(nu)
-            u, u_actual, du_actual, c_actual = sys.setup_system(
-                t,
-                nu,
-                d,
-                system[0],
-                sys_params=sys_params,
-                u0=u0,
-                seed=seed + j)
+            print(f'......N={N}, realization={j}')
+
+            # Add noise
+            np.random.seed(seed + j)
+            u = u_actual + np.random.normal(0, np.sqrt(nu), (m, N))
 
             # Projection-based smoothing
             A = utils.get_discrete_integral_matrix(t)
@@ -141,7 +142,7 @@ def get_error_with_increasing_N(nu,
                                              A,
                                              alpha=alpha,
                                              max_iter=max_iter,
-                                             plot=True,
+                                             plot=False,
                                              use_actual_P=use_actual_P,
                                              center_Theta=center_Theta)[0]
 
@@ -162,25 +163,22 @@ def get_error_with_increasing_N(nu,
         # Theoretical error expectation (does not include quadrature error)
         u_err_theory_vec.append(
             np.sqrt(nu / la.norm(u_actual, axis=1)**2 * (P + 1)))
+
     # Add theoretical values at N_max
-    t = np.linspace(0, ttrain, num=N_max)
-    # Find noisy/actual measurements and actual derivative/coef vector
-    sigma = np.sqrt(nu)
-    u, u_actual, du_actual, c_actual = sys.setup_system(t,
-                                                        nu,
-                                                        d,
-                                                        system[0],
-                                                        sys_params=sys_params,
-                                                        u0=u0,
-                                                        seed=0)
+    u_actual = sys.setup_system(np.linspace(0, ttrain, num=N_max),
+                                nu,
+                                d,
+                                system[0],
+                                sys_params=sys_params,
+                                u0=u0)[1]
     u_err_theory_vec.append(
         np.sqrt(nu / la.norm(u_actual, axis=1)**2 * (P + 1)))
-    # u_err_mean_noise_vec.append(utils.rel_err(u, u_actual))
     u_err_mean_noise_vec.append(
         np.sqrt(nu * N_max) * 1 / la.norm(u_actual, axis=1))
+
+    # Transpose arrays
     u_err_mean_vec = np.array(u_err_mean_vec).T
     u_err_std_vec = np.array(u_err_std_vec).T
-
     u_err_theory_vec = np.array(u_err_theory_vec).T
     u_err_mean_noise_vec = np.array(u_err_mean_noise_vec).T
     u_err_std_noise_vec = np.array(u_err_std_noise_vec).T
@@ -231,17 +229,21 @@ seed_vec = [
     991992, 102488, 793759, 807345, 948548, 802870, 818898, 909001, 491821
 ]
 for j, nu in enumerate(nu_vec):
+    print(f'nu={nu}------------------')
     sig = np.sqrt(nu)
+    print('...projection when Phi is known')
     u_errors_a[j] = get_error_with_increasing_N(nu,
                                                 N_vec,
                                                 seed_vec,
                                                 use_actual_P=True)
+    print('...PSDN')
     u_errors_b[j] = get_error_with_increasing_N(nu,
                                                 N_vec,
                                                 seed_vec,
                                                 use_actual_P=False,
                                                 max_iter=1,
                                                 center_Theta=center_Theta)
+    print('...IterPSDN')
     u_errors_c[j] = get_error_with_increasing_N(nu,
                                                 N_vec,
                                                 seed_vec,
@@ -254,6 +256,8 @@ for j, nu in enumerate(nu_vec):
 fig, axs = plt.subplots(m, 3)
 if system == '4':
     fig.set_size_inches(5, .5 + 1.5 * m)
+elif system == '5':
+    fig.set_size_inches(5, .5 + 1.3 * m)
 else:
     fig.set_size_inches(5, .5 + 1.6 * m)
 
@@ -293,6 +297,10 @@ for j in range(1, 3):
 if system == '4':
     axs[1, 0].set_ylim([4 * 10**-4, .08])
     axs[2, 0].set_ylim([10**-3, .2])
+
+if system == '5':
+    for i in range(m):
+        axs[i, 0].set_ylim([10**-2, .3])
 
 # axs[0, 2].set_ylim([10**-4, 10**-1])
 

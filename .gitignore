@@ -8,3 +8,4 @@ Dockerfile
 /wsindy_results
 /paper_optimizations
 /notebooks/run_SOCP_and_IRW_Lasso.ipynb
+/paper_PSDN_theory

@@ -86,7 +86,7 @@ def projection_denoising(u,
         Phi = np.hstack((np.ones(N).reshape(-1, 1), Phi))
 
         # Use SVD to perform projeciton
-        U, s, Vh = la.svd(Phi, full_matrices=False)
+        U = la.svd(Phi, full_matrices=False)[0]
         P_Phi = U @ U.T
         u_proj_new = alpha * (P_Phi @ u_proj.T).T + (1 - alpha) * u_proj
 
@@ -145,13 +145,13 @@ def projection_denoising(u,
         fig.update_layout(width=600, height=400)
         fig.show()
 
-        fig = go.Figure()
-        for i, ui in enumerate(sum_vec):
-            fig.add_trace(go.Scatter(y=np.abs(ui), name=f'u{i}'))
-        fig.update_yaxes(title_text='Error sum', type='log')
-        fig.update_xaxes(title_text='Iteration of projection method')
-        fig.update_layout(width=600, height=400)
-        fig.show()
+        # fig = go.Figure()
+        # for i, ui in enumerate(sum_vec):
+        #     fig.add_trace(go.Scatter(y=np.abs(ui), name=f'u{i}'))
+        # fig.update_yaxes(title_text='Error sum', type='log')
+        # fig.update_xaxes(title_text='Iteration of projection method')
+        # fig.update_layout(width=600, height=400)
+        # fig.show()
 
     return u_proj, la.cond(Phi)
 

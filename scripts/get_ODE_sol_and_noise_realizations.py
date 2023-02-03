@@ -50,8 +50,8 @@ def run_replications(system,
         os.makedirs(outdir)
 
     # Find the noise level/random seed vectors
-    nu_vec = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1]
-    # nu_vec = [1]
+    # nu_vec = [0.00001, 0.0001, 0.001, 0.01, 0.1, 1]
+    nu_vec = [10]
 
     if system == '2a' and N == 1000 and ttrain == 10:
         rand_seed = 991182

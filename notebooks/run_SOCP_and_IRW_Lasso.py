@@ -28,6 +28,7 @@ import warnings
 import plotly.io as pio
 import multiprocessing
 import time
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import dsindy.monomial_library_utils as mlu
@@ -40,6 +41,16 @@ import dsindy.optim_problems as op
 pio.renderers.default = 'notebook+plotly_mimetype'
 warnings.filterwarnings('ignore')
 
+mpl.rc('text.latex', preamble=r'\usepackage{bm}')
+plt.rcParams['axes.autolimit_mode'] = "data"
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+plt.rc('font', size=10)  # controls default text size
+plt.rc('axes', titlesize=10)  # fontsize of the title
+plt.rc('axes', labelsize=10)  # fontsize of the x and y labels
+plt.rc('xtick', labelsize=8)  # fontsize of the x tick labels
+plt.rc('ytick', labelsize=8)  # fontsize of the y tick labels
+plt.rc('legend', fontsize=8)  # fontsize of the legend
 # %% tags=["remove_input"]
 
 # Load arguments
@@ -69,7 +80,7 @@ nu = 1  # noise level (variance)
 system = '5'
 N = 2000  # number of samples
 ttrain = 5  # training time
-realization = 0
+realization = 7
 datadir = f'{bdir}/paper_noise_realizations/Lorenz_96/'
 get_GP = True
 
@@ -391,6 +402,9 @@ Here I'm only showing plots for the first iteration of lasso.
 
 amax_lasso = 100
 amin_lasso = 1e-8
+if system == '5' and nu == 0.1:
+    amax_lasso = 1
+    amin_lasso = 1e-6
 if system == '5' and nu == 1:
     amax_lasso = 1
     amin_lasso = 1e-6
@@ -435,7 +449,7 @@ for i in range(m):
 c_dict = {}
 # c_dict['socp_es'] = (W_proj @ B_es @ du_socp_es.T).T
 c_dict['socp_sm'] = (W_proj @ B_sm @ du_socp_sm.T).T
-c_dict['socp_theory'] = c_theory
+# c_dict['socp_theory'] = c_theory
 c_dict['lasso'] = lasso_c
 # c_dict['lasso_GP'] = lasso_c_GP
 
@@ -592,31 +606,83 @@ for i in range(m):
     fig2.update_yaxes(title_text=f'u{i+1}')
     fig2.show()
 
-# %%
-
-# # Pull in values from weak sindy
-
-# # Values for system=2b, N=1000, nu=0.01, realization=7
-# c1_WSINDY = np.array(
-#     [0, 0, 0.991728193300835, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-# c2_WSINDY = np.array([
-#     -0.336191693, 0.73528806, 0, 0, -0.601285429, 1.705789569, -2.603538184,
-#     -0.46098231, -1.946309106, 0, 1.007476692, 0.850158343, 0, 0.63016903,
-#     -1.219972351
-# ])
-
-# c_WSINDY = np.vstack((c1_WSINDY, c2_WSINDY))
-# c_WSINDY.shape
-# que = multiprocessing.Queue()
-# pro = multiprocessing.Process(target=run_ode, name="Run_ODE",
-#                               args=(que, tend, u0, c_WSINDY, d, t_test))
-# pro.start()
-
-# sol_dict['WSINDy'] = que.get()
 # %% tags=["remove_cell"]
 
+# Pull in values from WSINDy to do comparison with system dyanmics.
+# This is hard coded at the moment, so only works for specified realization.
+
+# Values for system=2b, N=1000, nu=0.01, realization=7
+if system == '2b':
+    c1_WSINDY = np.array(
+        [0, 0, 0.991728193300835, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    c2_WSINDY = np.array([
+        -0.336191693, 0.73528806, 0, 0, -0.601285429, 1.705789569,
+        -2.603538184, -0.46098231, -1.946309106, 0, 1.007476692, 0.850158343,
+        0, 0.63016903, -1.219972351
+    ])
+    c_WSINDY = np.vstack((c1_WSINDY, c2_WSINDY))
+
+# Values for system=5, N=2000, nu=1, realization=7
+if system == '5':
+    c1_WSINDY = np.array([
+        7.108455639, 0, -1.135580898, 0, 0, -2.168793634, -3.552969926, 0, 0,
+        0, 0, -0.813568729, 0, 0, -0.172248306, 0, 0.197266825, 1.360492574, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0.525552429
+    ])
+    c2_WSINDY = np.array([
+        0, 2.704239283, -1.953518897, 3.788023686, 0, 0, 0, 0, 0, 0, 0, 0,
+        -1.5093817, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    ])
+    c3_WSINDY = np.array([
+        0, 1.002590833, 1.284223096, -1.573627989, 2.321067758, 1.304054575, 0,
+        0, -1.2490884, 0, -0.318442466, 0, -0.116603746, 0, 0, 0.775479673,
+        -0.338199601, 0, 0.280376249, -0.287566149, 0.250255523, 0,
+        -0.070960637, -0.437739469, 0, 0, 0, 0
+    ])
+    c4_WSINDY = np.array([
+        0, 0.778094702, 0.981207081, 0, 0.577744719, 1.378263204, 2.725350959,
+        0, 0, 0, 0, 0, 0, 0, -1.055940021, 0, 0, 0.25016713, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, -0.308780701
+    ])
+    c5_WSINDY = np.array([
+        0, 1.360351287, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        -0.867435396, -0.309567846, 0, 0, 0, 1.058051372, 0.233191667, 0, 0
+    ])
+    c6_WSINDY = np.array([
+        0, 0, 0, 0, 0, 0, 0, 0, 0.278896421, 0, 0.619171038, 0, 0.247971289, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, -0.806408033, 0, 0, 0, 0
+    ])
+    c_WSINDY = np.vstack(
+        (c1_WSINDY, c2_WSINDY, c3_WSINDY, c4_WSINDY, c5_WSINDY, c6_WSINDY))
+    c_WSINDY = np.hstack(
+        (c_WSINDY, np.zeros((m, np.size(c_actual, 1) - np.size(c_WSINDY, 1)))))
+
+# Run ODE simulation for WSINDy
+que = multiprocessing.Queue()
+pro = multiprocessing.Process(target=run_ode,
+                              name="Run_ODE",
+                              args=(que, u0_test, c_WSINDY, d, t_test))
+pro.start()
+
+sol_dict['WSINDy'] = que.get()
+# %% tags=["remove_cell"]
+
+fig, axs = plt.subplots(m, 2, sharex='col', sharey=True)
+fig.set_size_inches(6, 7)
 for i in range(m):
-    plt.figure(figsize=(4, 2))
+    axs[i, 0].plot(t, u[i], '.', label='Measurements', markersize=1)
+    axs[i, 0].plot(t,
+                   u_actual[i],
+                   label='Actual',
+                   color=cols[3],
+                   linestyle='dashed')
+    axs[i, 0].set_xlim([0, ttrain])
+    # plt.ylim(-1.1, 1.5)
+    axs[i, 0].set_ylabel(fr'$u_{i+1}$')
+    # axs[i, 0].set_xlabel(r'$t$')
+    # plt.legend()
+    # plt.savefig(f'{bdir}/output/presentation_figs/{description}_u{i+1}.pdf')
+    # plt.show()
     for key, val in sol_dict.items():
         if key == 'socp_sm':
             label = 'DSINDy'
@@ -624,22 +690,46 @@ for i in range(m):
             continue
         if key == 'lasso':
             label = r'$\ell_1$-SINDy'
+            continue
         if key == 'WSINDy':
             label = 'WSINDy'
+            continue
         if sol_dict[key] == 'Failed':
             continue
         u_cur = val.y
-        plt.plot(t_test[:np.size(u_cur[i])], u_cur[i], label=label)
-    plt.plot(t_test, u_actual_test[i], label='Actual', linestyle='dashed')
-    plt.xlim([0, tend])
+        axs[i, 1].plot(t_test[:np.size(u_cur[i])], u_cur[i], label=label)
+        axs[i, 1].axvline(x=t_fail_dict['socp_sm'] - 0.02,
+                          linestyle='dotted',
+                          color='black')
+    axs[i, 1].plot(t_test,
+                   u_actual_test[i],
+                   label='Actual',
+                   linestyle='dashed',
+                   color=cols[3])
+
     # plt.ylim(-1.1, 1.5)
-    # plt.ylim(-10, 10)
-    plt.ylabel(fr'$u_{i+1}$')
-    plt.xlabel(r'$t$')
-    plt.legend(ncol=2)
-    nm = f'{description}_u{i+1}_pred.pdf'
-    plt.savefig(f'{bdir}/output/presentation_figs/{nm}')
-    plt.show()
+    axs[i, 1].set_ylim(-11, 15)
+#    axs[i, 1].set_ylabel(fr'$u_{i+1}$')
+
+axs[m - 1, 0].set_xlabel(r'$t$')
+axs[m - 1, 1].set_xlabel(r'$t$')
+
+axs[0, 1].set_xlim([5, 10])
+axs[0, 1].legend(ncol=2, loc='lower center', bbox_to_anchor=(.5, 1))
+axs[0, 0].legend(ncol=2, loc='lower center', bbox_to_anchor=(.5, 1))
+nm = f'{description}_u_pred.pdf'
+plt.savefig(f'{bdir}/output/presentation_figs/{nm}')
+plt.show()
+
+ax = plt.figure().add_subplot(projection='3d')
+ax.plot(sol_dict['socp_sm'].y[0, :tf], sol_dict['socp_sm'].y[1, :tf],
+        sol_dict['socp_sm'].y[2, :tf])
+ax.plot(u_actual_test[0, :tf],
+        u_actual_test[1, :tf],
+        u_actual_test[2, :tf],
+        linestyle='dashed',
+        color=cols[3])
+
 # %% tags=["remove_input"]
 
 # for j in range(2):
