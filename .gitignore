@@ -3,7 +3,7 @@ Dockerfile
 *~
 /DSINDy.egg-info
 /current_output
-/eqndiscov/__pycache__
+/dsindy/__pycache__
 /output
 /wsindy_results
 /paper_optimizations
