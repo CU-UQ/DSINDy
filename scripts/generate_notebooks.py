@@ -82,10 +82,10 @@ def run_notebook_set(system,
                              bdir=bdir)
 
 
-# system = '2a'
-# N_vec = [1000]
-# nu_vec = [0.0001]
-# run_notebook_set(system, N_vec, start=25, n_realizations=1, nu_vec=nu_vec)
+system = '2a'
+N_vec = [1000]
+nu_vec = [1]
+run_notebook_set(system, N_vec, start=4, n_realizations=1, nu_vec=nu_vec)
 
 # system = '2b'
 # N_vec = [250]
@@ -109,14 +109,14 @@ def run_notebook_set(system,
 # N_vec = [1000]
 # run_notebook_set(system, N_vec, start=10, n_realizations=20)
 
-system = '5'
-N_vec = [2000]
-ttrain = 5
-run_notebook_set(system,
-                 N_vec,
-                 start=0,
-                 n_realizations=30,
-                 ttrain=ttrain,
-                 nu_vec=[.001])
+# system = '5'
+# N_vec = [2000]
+# ttrain = 5
+# run_notebook_set(system,
+#                  N_vec,
+#                  start=0,
+#                  n_realizations=19,
+#                  ttrain=ttrain,
+#                  nu_vec=[.1])
 
 print('Code finished!')

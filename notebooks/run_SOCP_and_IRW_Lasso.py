@@ -72,17 +72,23 @@ datadir = arguments['datadir']
 get_GP = True
 if N == 8000:
     get_GP = False
+change_IC = False
+if system == '5':
+    change_IC = True
 
 # %% tags=["remove_cell"]
 # For Testing
 bdir = '/home/jacqui/projects/DSINDy/'
-nu = 1  # noise level (variance)
-system = '5'
-N = 2000  # number of samples
-ttrain = 5  # training time
+nu = .01  # noise level (variance)
+system = '2b'
+N = 1000  # number of samples
+ttrain = 10  # training time
 realization = 7
-datadir = f'{bdir}/paper_noise_realizations/Lorenz_96/'
+datadir = f'{bdir}/paper_noise_realizations/Duffing/'
 get_GP = True
+change_IC = False
+if system == '5':
+    change_IC = True
 
 # %% [markdown]
 """
@@ -449,7 +455,7 @@ for i in range(m):
 c_dict = {}
 # c_dict['socp_es'] = (W_proj @ B_es @ du_socp_es.T).T
 c_dict['socp_sm'] = (W_proj @ B_sm @ du_socp_sm.T).T
-# c_dict['socp_theory'] = c_theory
+c_dict['socp_theory'] = c_theory
 c_dict['lasso'] = lasso_c
 # c_dict['lasso_GP'] = lasso_c_GP
 
@@ -485,7 +491,6 @@ out = solve_ivp(odesys.run_monomial_ode, [0, t_test_temp[-1]],
                 atol=1e-12)
 
 # change IC
-change_IC = True
 if change_IC:
     u0_test = out.y[:, np.where(out.t == ttrain)[0][0]]
     u_actual_test = out.y[:, np.where(out.t == ttrain)[0][0]:]
@@ -667,8 +672,11 @@ pro.start()
 sol_dict['WSINDy'] = que.get()
 # %% tags=["remove_cell"]
 
-fig, axs = plt.subplots(m, 2, sharex='col', sharey=True)
-fig.set_size_inches(6, 7)
+fig, axs = plt.subplots(m, 2, sharex='col', sharey=True,gridspec_kw={'width_ratios':[1,2]})
+if system=='2b':
+    fig.set_size_inches(6, 3)
+if system=='5':
+    fig.set_size_inches(6, 7)
 for i in range(m):
     axs[i, 0].plot(t, u[i], '.', label='Measurements', markersize=1)
     axs[i, 0].plot(t,
@@ -690,10 +698,10 @@ for i in range(m):
             continue
         if key == 'lasso':
             label = r'$\ell_1$-SINDy'
-            continue
+            # continue
         if key == 'WSINDy':
             label = 'WSINDy'
-            continue
+            # continue
         if sol_dict[key] == 'Failed':
             continue
         u_cur = val.y
@@ -708,27 +716,31 @@ for i in range(m):
                    color=cols[3])
 
     # plt.ylim(-1.1, 1.5)
-    axs[i, 1].set_ylim(-11, 15)
+    if system=='5':
+        axs[i, 1].set_ylim(-11, 15)
 #    axs[i, 1].set_ylabel(fr'$u_{i+1}$')
 
 axs[m - 1, 0].set_xlabel(r'$t$')
 axs[m - 1, 1].set_xlabel(r'$t$')
 
-axs[0, 1].set_xlim([5, 10])
+if system=='2b':
+    axs[0, 1].set_xlim([0, 20])
+if system=='5':
+    axs[0, 1].set_xlim([5, 10])
 axs[0, 1].legend(ncol=2, loc='lower center', bbox_to_anchor=(.5, 1))
 axs[0, 0].legend(ncol=2, loc='lower center', bbox_to_anchor=(.5, 1))
 nm = f'{description}_u_pred.pdf'
-plt.savefig(f'{bdir}/output/presentation_figs/{nm}')
+# plt.savefig(f'{bdir}/output/presentation_figs/{nm}')
 plt.show()
 
-ax = plt.figure().add_subplot(projection='3d')
-ax.plot(sol_dict['socp_sm'].y[0, :tf], sol_dict['socp_sm'].y[1, :tf],
-        sol_dict['socp_sm'].y[2, :tf])
-ax.plot(u_actual_test[0, :tf],
-        u_actual_test[1, :tf],
-        u_actual_test[2, :tf],
-        linestyle='dashed',
-        color=cols[3])
+# ax = plt.figure().add_subplot(projection='3d')
+# ax.plot(sol_dict['socp_sm'].y[0, :tf], sol_dict['socp_sm'].y[1, :tf],
+#         sol_dict['socp_sm'].y[2, :tf])
+# ax.plot(u_actual_test[0, :tf],
+#         u_actual_test[1, :tf],
+#         u_actual_test[2, :tf],
+#         linestyle='dashed',
+#         color=cols[3])
 
 # %% tags=["remove_input"]
 

@@ -1,1 +1,1 @@
-{"realization": 29, "nu": 0.001, "system": "5", "ttrain": 5, "N": 2000, "datadir": "/home/jacqui/projects/DSINDy//paper_noise_realizations/Lorenz_96/"}
+{"realization": 4, "nu": 1, "system": "2a", "ttrain": 10, "N": 1000, "datadir": "/home/jacqui/projects/DSINDy//paper_noise_realizations/Duffing/"}

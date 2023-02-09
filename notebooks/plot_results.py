@@ -42,15 +42,14 @@ The plots show the mean results of these 10 realizations.
 # %%
 
 # system = '2a'
-# system = '2b'
+system = '2b'
 # system = '3'
 # system = '4'
-system = '5'
+# system = '5'
 
 bdir = '/home/jacqui/projects/DSINDy/'
 
 # %%
-
 
 def generate_df(nu_vec, N=1000, ttrain=10, system='2', reps=30):
     """Iterate through simulation realizations and extract mean/std."""
@@ -96,13 +95,15 @@ def generate_df(nu_vec, N=1000, ttrain=10, system='2', reps=30):
                     print(f'Results for nu={nu} realization={i} do not exist.')
                     continue
 
-        np.min(err_df.loc['t_fail_lasso'][err_df.loc['t_fail_lasso'] > 0])
 
+        
+        err_df.loc['c1_socp_theory']
         n = np.size(err_df, 1)
 
         # For 5th system we include time till > 10% error
 
         if system == '5':
+            # np.min(err_df.loc['t_fail_lasso'][err_df.loc['t_fail_lasso'] > 0])
             t_keys = ['t_fail_lasso', 't_fail_socp_sm', 't_fail_socp_theory']
             for key in t_keys:
                 # If sim failed set prediction time to sim start
@@ -129,6 +130,18 @@ def generate_df(nu_vec, N=1000, ttrain=10, system='2', reps=30):
                 socp_theory_failed.append(failed)
             if key_end == '_pred_lasso':
                 lasso_failed.append(failed)
+
+        # Find sum of relative coefficient and reconstruction error
+        key_ends = ['socp_sm', 'socp_theory']
+        for key in key_ends:
+            for i in range(m):
+                if i==0:
+                    err_df.loc[f'c_{key}'] = err_df.loc[f'c1_{key}']/m
+                    err_df.loc[f'u_pred_{key}'] = err_df.loc[f'u1_pred_{key}']/m
+                else:
+                    err_df.loc[f'c_{key}'] += err_df.loc[f'c{i+1}_{key}']/m
+                    err_df.loc[f'u_pred_{key}'] += err_df.loc[f'u{i+1}_pred_{key}']/m
+
 
         print(f'nu={nu}')
         print(n)
@@ -171,7 +184,8 @@ def gen_plot(cols,
              logy=True,
              include_std=True,
              ypad=4,
-             sig_vec=[0.01, 0.1, 1]):
+             sig_vec=[0.01, 0.1, 1],
+             use_average=False):
     """Function to generate plots of data-driven dynamics results."""
     if colors is None:
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -404,7 +418,10 @@ def gen_plot_set(cols_temp,
             LogLocator(base=10, subs=np.arange(2, 10) * .1, numticks=100))
         axs[i].xaxis.set_minor_locator(
             LogLocator(base=10, subs=np.arange(2, 10) * .1, numticks=100))
-        axs[i].set_title(rf'$k={i + 1 + mstart}$')
+        if error_type is 'time':
+            axs[i].set_title('Prediction Time')
+        else:
+            axs[i].set_title(rf'$k={i + 1 + mstart}$')
         # Hide axes that are redundant
         if i > m_eff - 1:
             axs[i].get_xaxis().set_visible(False)
@@ -424,6 +441,81 @@ def gen_plot_set(cols_temp,
         plot_legend(cols_temp, label_params, type='v')
         plot_legend(cols_temp, label_params, type='h')
 
+
+def gen_plot_avg(cols_temp,
+                 df_mean,
+                 df_std,
+                 labels=None,
+                 fn='temp',
+                 ylabel_start='',
+                 colors=None,
+                 save_legend=False):
+    """Function to generate plots of data-driven dynamics results."""
+    if colors is None:
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    linetype = ['solid', 'dashed', 'dotted']
+
+    # Set figure size depending on figure type
+    fig, axs = plt.subplots(1, 2)
+    fig.set_size_inches(4, 2)
+
+
+
+    # Specify which errors need to be plotted
+    error_types = ['c', 'u']
+    for k, error_type in enumerate(error_types):
+        if error_type == 'c':
+                cols = [f'c_' + lab for lab in cols_temp]
+        if error_type == 'u' or error_type == 'us':
+            cols = [f'u_pred_' + lab for lab in cols_temp]
+
+        # Reorganize dataframes for easier plotting
+        df_new = df_mean[cols]
+
+        df1 = pd.melt(df_new.reset_index(), id_vars='index')
+        df1.rename(columns={'index': 'sigma', 'value': 'mean'}, inplace=True)
+        df_std_new = df_std[cols]
+        df2 = pd.melt(df_std_new.reset_index(), id_vars='index')
+        df2.rename(columns={'index': 'sigma', 'value': 'std'}, inplace=True)
+        df1['std'] = df2['std']
+
+        # Enumerate through cols vector and plot associated error
+        for j, key in enumerate(cols):
+            key_old = cols_temp[j]
+            df1[df1['variable'] == key].plot('sigma',
+                                                'mean',
+                                                yerr='std',
+                                                label=labels[key_old],
+                                                ax=axs[k],
+                                                marker='.',
+                                                color=colors[j],
+                                                linestyle=linetype[j])
+        # Set y-axis label
+        if error_type == 'c':
+            title = r'Average relative $\bm{c}$ error'
+        if error_type == 'u':
+            title = r'Average relative $\bm{u}$ error'
+        axs[k].set_title(title)
+        axs[k].get_legend().remove()
+    axs[0].set_ylabel(ylabel_start)
+
+    # Format plot
+    for i in range(np.size(axs)):
+
+        axs[i].set_xlabel(r'$\sigma$')
+        axs[i].loglog()
+        axs[i].grid(True, which='major', color='gray')
+        axs[i].set_xticks([0.001, 0.01, .1, 1])
+        axs[i].yaxis.set_major_locator(LogLocator(base=10, numticks=100))
+        axs[i].yaxis.set_minor_locator(
+            LogLocator(base=10, subs=np.arange(2, 10) * .1, numticks=100))
+        axs[i].xaxis.set_minor_locator(
+            LogLocator(base=10, subs=np.arange(2, 10) * .1, numticks=100))
+
+    # Save main figure
+    fig.set_dpi(600.0)
+    plt.savefig(f'{bdir}/current_output/plots/' + fn + '.pdf', pad_inches=0)
+    plt.show()
 
 def plot_legend(cols, label_params, type='h'):
     collist = '_'.join(cols)
@@ -492,7 +584,7 @@ if system == '4':
     N_vec = [1000]
     SysName = r'\textbf{R\"{o}ssler}'
 if system == '5':
-    nu_vec = [1e-6, 0.0001, 0.001, 0.01, 0.1, 1]
+    nu_vec = [1e-6, 1e-5, 0.0001, 0.001, 0.01, 0.1, 1]
     m = 6
     compare_with_wsindy = True
     # # SLIGHTLY WORSE
@@ -611,36 +703,30 @@ if len(dfs_mean) == 1:
         'lasso': r'$\ell_1$-SINDy',
         'WSINDY': 'WSINDy'
     }
-    gen_plot_set(cols_c,
-                 dfs_mean[0],
-                 dfs_sem[0],
-                 labels=labels_c,
-                 fn=f'{base_dir}/{base_dir}_coef_summary_err1',
-                 error_type='c',
-                 save_legend=True)
-    if system == '5':
+    mstart=0
+    while mstart < m:
         gen_plot_set(cols_c,
-                     dfs_mean[0],
-                     dfs_sem[0],
-                     labels=labels_c,
-                     fn=f'{base_dir}/{base_dir}_coef_summary_err2',
-                     error_type='c',
-                     save_legend=True,
-                     mstart=3)
+                    dfs_mean[0],
+                    dfs_sem[0],
+                    labels=labels_c,
+                    fn=f'{base_dir}/{base_dir}_coef_summary_err{int(mstart/3)}',
+                    error_type='c',
+                    save_legend=True,
+                    mstart=mstart)
+        mstart = mstart + 3
 
     cols_c_socp = ['socp_sm', 'socp_theory']
     labels_c_socp = {
         'socp_sm': 'DSINDy (Pareto)',
         'socp_theory': 'DSINDy (theory)'
     }
-    gen_plot_set(cols_c_socp,
-                 dfs_mean[0],
-                 dfs_sem[0],
-                 labels=labels_c_socp,
-                 fn=f'{base_dir}/{base_dir}_coef_socp_summary_err',
-                 error_type='c',
-                 colors=[colors[0], colors[3]],
-                 save_legend=True)
+    gen_plot_avg(cols_c_socp,
+                dfs_mean[0],
+                dfs_sem[0],
+                labels=labels_c_socp,
+                ylabel_start=f'{SysName}',
+                fn=f'{base_dir}/{base_dir}_socp_summary_err',
+                colors=[colors[0], colors[3]])
 
     # Reconstruction Error (sem)
     cols_u = ['pred_socp_sm', 'pred_lasso', 'WSINDY']
@@ -673,26 +759,34 @@ if len(dfs_mean) == 1:
     # Derivative Error (std)
     cols_du = ['socp_sm', 'tikreg']
     labels_du = {'socp_sm': 'DSINDy', 'tikreg': 'Tikhonov Regularization'}
-    gen_plot_set(cols_du,
-                 dfs_mean[0],
-                 dfs_std[0],
-                 ylabel_start=f'{SysName}\n\n',
-                 labels=labels_du,
-                 fn=f'{base_dir}/{base_dir}_du_summary_err',
-                 error_type='du',
-                 save_legend=True)
+    mstart=0
+    while mstart < m:
+        gen_plot_set(cols_du,
+                    dfs_mean[0],
+                    dfs_std[0],
+                    ylabel_start=f'{SysName}\n\n',
+                    labels=labels_du,
+                    fn=f'{base_dir}/{base_dir}_du_summary_err{int(mstart/3)}',
+                    error_type='du',
+                    save_legend=True,
+                    mstart=mstart)
+        mstart = mstart + 3
 
     # Smoothing Error (std)
     cols_smooth = ['smooth_proj', 'smooth_GP']
     labels_smooth = {'smooth_proj': 'IterPSDN', 'smooth_GP': 'GP'}
-    gen_plot_set(cols_smooth,
-                 dfs_mean[0],
-                 dfs_std[0],
-                 ylabel_start=f'{SysName}\n\n',
-                 labels=labels_smooth,
-                 fn=f'{base_dir}/{base_dir}_smooth_summary_err',
-                 error_type='us',
-                 save_legend=True)
+    mstart=0
+    while mstart < m:
+        gen_plot_set(cols_smooth,
+                    dfs_mean[0],
+                    dfs_std[0],
+                    ylabel_start=f'{SysName}\n\n',
+                    labels=labels_smooth,
+                    fn=f'{base_dir}/{base_dir}_smooth_summary_err{int(mstart/3)}',
+                    error_type='us',
+                    save_legend=True,
+                    mstart=mstart)
+        mstart = mstart + 3
 
     # Prediction ability
     if system == '5':
@@ -707,6 +801,19 @@ if len(dfs_mean) == 1:
                      dfs_sem[0],
                      labels=labels_t,
                      fn=f'{base_dir}/{base_dir}_t_prediction',
+                     error_type='time')
+
+        cols_t = ['t_fail_socp_sm', 't_fail_socp_theory']
+        labels_t = {
+            't_fail_socp_sm': 'DSINDy (Pareto)',
+            't_fail_socp_theory': 'DSINDy (theory)',
+        }
+        gen_plot_set(cols_t,
+                     dfs_mean[0],
+                     dfs_sem[0],
+                     labels=labels_t,
+                     colors=[colors[0], colors[3]],
+                     fn=f'{base_dir}/{base_dir}_t_prediction_socp',
                      error_type='time')
 
     # Failed solution
@@ -740,15 +847,15 @@ if len(dfs_mean) == 1:
 
 else:
 
-    # # Smoothing error
-    # for i in range(1, m + 1):
-    #     cols_smooth = [f'u{i}_smooth_proj', f'u{i}_smooth_GP']
-    #     labels_smooth = {f'u{i}_smooth_proj': 'PSDN',
-    #                      f'u{i}_smooth_GP': 'GP'}
-    #     gen_plot(cols_smooth, dfs_mean, dfs_std,
-    #              r'Relative $\tilde{\bm{u}}_' + f'{i}' + r'$ error', N_vec,
-    #              labels=labels_smooth,
-    #              fn=f'{base_dir}/{base_dir}_u{i}_smooth_err')
+    # Smoothing error
+    for i in range(1, m + 1):
+        cols_smooth = [f'u{i}_smooth_proj', f'u{i}_smooth_GP']
+        labels_smooth = {f'u{i}_smooth_proj': 'PSDN',
+                         f'u{i}_smooth_GP': 'GP'}
+        gen_plot(cols_smooth, dfs_mean[:5], dfs_std[:5],
+                 r'Relative $\tilde{\bm{u}}_' + f'{i}' + r'$ error', N_vec,
+                 labels=labels_smooth,
+                 fn=f'{base_dir}/{base_dir}_u{i}_smooth_err')
 
     # Coefficient error
     for i in range(1, m + 1):
@@ -767,10 +874,10 @@ else:
                 f'c{i}_lasso': r'$\ell_1$-SINDy'
             }
 
-        cols_socp_c = [f'c{i}_socp_sm', f'c{i}_socp_theory']
+        cols_socp_c = [f'c_socp_sm', f'c_socp_theory']
         labels_socp_c = {
-            f'c{i}_socp_sm': 'DSINDy (Pareto)',
-            f'c{i}_socp_theory': 'DSINDy (theory)'
+            f'c_socp_sm': 'DSINDy (Pareto)',
+            f'c_socp_theory': 'DSINDy (theory)'
         }
 
         # Coefficient Error
@@ -786,10 +893,10 @@ else:
         gen_plot(cols_socp_c,
                  dfs_mean,
                  dfs_sem,
-                 r'Relative $\bm{c}_' + f'{i}' + r'$ error',
+                 r'Average relative $\bm{c}$ error',
                  N_vec,
                  labels=labels_socp_c,
-                 fn=f'{base_dir}/{base_dir}_c{i}_socp_err',
+                 fn=f'{base_dir}/{base_dir}_c_socp_err',
                  colors=[colors[0], colors[3]])
 
     # Derivative error

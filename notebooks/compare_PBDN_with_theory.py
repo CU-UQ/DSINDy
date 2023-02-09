@@ -34,8 +34,8 @@ plt.rc('ytick', labelsize=8)  # fontsize of the y tick labels
 plt.rc('legend', fontsize=5)  # fontsize of the legend
 
 # %% USER DEFINED PARAMETERS
-system = '5'
-ttrain = 5
+system = '2b'
+ttrain = 10
 N_vec = np.logspace(2, 4, 5).astype(int)
 # N_vec = np.logspace(2, 3, 2).astype(int)
 alpha = .1
@@ -43,6 +43,7 @@ max_iter = 1000
 out_dir = '/home/jacqui/projects/DSINDy/current_output/PSDN_Theory/'
 nu_vec = [.1]
 if system == '5':
+    ttrain = 5
     nu_vec = [1]
 
 # %% Set up and plot initial states
@@ -92,7 +93,7 @@ def get_error_with_increasing_N(nu,
                                 alpha=1,
                                 max_iter=1,
                                 center_Theta=False,
-                                realizations=50):
+                                realizations=10):
     """Obtain smoothing error at multiple values of N."""
     u_err_mean_vec = []
     u_err_std_vec = []
