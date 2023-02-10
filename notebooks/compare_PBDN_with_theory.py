@@ -34,17 +34,26 @@ plt.rc('ytick', labelsize=8)  # fontsize of the y tick labels
 plt.rc('legend', fontsize=5)  # fontsize of the legend
 
 # %% USER DEFINED PARAMETERS
-system = '2b'
-ttrain = 10
-N_vec = np.logspace(2, 4, 5).astype(int)
-# N_vec = np.logspace(2, 3, 2).astype(int)
-alpha = .1
-max_iter = 1000
+# system = '2a'
+# system = '3'
+# system = '4'
+system = '5'
+
 out_dir = '/home/jacqui/projects/DSINDy/current_output/PSDN_Theory/'
-nu_vec = [.1]
+load_dir = '/home/jacqui/projects/DSINDy/paper_PSDN_theory/'
+
+load_from_file=True
+if not load_from_file:
+    N_vec = np.logspace(2, 4, 5).astype(int)
+    alpha = .1
+    max_iter = 1000
+
 if system == '5':
     ttrain = 5
     nu_vec = [1]
+else:
+    ttrain = 10
+    nu_vec = [.1]
 
 # %% Set up and plot initial states
 
@@ -219,46 +228,63 @@ def plot_results(u_errors, col, sig):
                          fr'$_{i+1}^*$)',
                          color=colors[i],
                          linestyle='dotted')
+        if system == '5':
+            break
 
 
 # %% Obtain smoothing results for the 10 simulations
 
-u_errors_a = {}
-u_errors_b = {}
-u_errors_c = {}
-seed_vec = [
-    991992, 102488, 793759, 807345, 948548, 802870, 818898, 909001, 491821
-]
-for j, nu in enumerate(nu_vec):
-    print(f'nu={nu}------------------')
-    sig = np.sqrt(nu)
-    print('...projection when Phi is known')
-    u_errors_a[j] = get_error_with_increasing_N(nu,
-                                                N_vec,
-                                                seed_vec,
-                                                use_actual_P=True)
-    print('...PSDN')
-    u_errors_b[j] = get_error_with_increasing_N(nu,
-                                                N_vec,
-                                                seed_vec,
-                                                use_actual_P=False,
-                                                max_iter=1,
-                                                center_Theta=center_Theta)
-    print('...IterPSDN')
-    u_errors_c[j] = get_error_with_increasing_N(nu,
-                                                N_vec,
-                                                seed_vec,
-                                                use_actual_P=False,
-                                                alpha=alpha,
-                                                max_iter=max_iter,
-                                                center_Theta=center_Theta)
+
+if load_from_file:
+    with open(f'{load_dir}/{out_file[:-4]}_a.pkl', 'rb') as fh:
+        u_errors_a = pickle.load(fh)
+    with open(f'{load_dir}/{out_file[:-4]}_b.pkl', 'rb') as fh:
+        u_errors_b = pickle.load(fh)
+    with open(f'{load_dir}/{out_file[:-4]}_c.pkl', 'rb') as fh:
+        u_errors_c = pickle.load(fh)
+else:
+    u_errors_a = {}
+    u_errors_b = {}
+    u_errors_c = {}
+    seed_vec = [
+        991992, 102488, 793759, 807345, 948548, 802870, 818898, 909001, 491821
+    ]
+    for j, nu in enumerate(nu_vec):
+        print(f'nu={nu}------------------')
+        sig = np.sqrt(nu)
+        print('...projection when Phi is known')
+        u_errors_a[j] = get_error_with_increasing_N(nu,
+                                                    N_vec,
+                                                    seed_vec,
+                                                    use_actual_P=True)
+        print('...PSDN')
+        u_errors_b[j] = get_error_with_increasing_N(nu,
+                                                    N_vec,
+                                                    seed_vec,
+                                                    use_actual_P=False,
+                                                    max_iter=1,
+                                                    center_Theta=center_Theta)
+        print('...IterPSDN')
+        u_errors_c[j] = get_error_with_increasing_N(nu,
+                                                    N_vec,
+                                                    seed_vec,
+                                                    use_actual_P=False,
+                                                    alpha=alpha,
+                                                    max_iter=max_iter,
+                                                    center_Theta=center_Theta)
 
 # %%
+
+# For Lorenz 96 model only plot first state
+if system=='5':
+    m = 1
+
 fig, axs = plt.subplots(m, 3)
+axs = np.reshape(axs, (m, 3))
 if system == '4':
     fig.set_size_inches(5, .5 + 1.5 * m)
 elif system == '5':
-    fig.set_size_inches(5, .5 + 1.3 * m)
+    fig.set_size_inches(5, .5 + 1.5 * m)
 else:
     fig.set_size_inches(5, .5 + 1.6 * m)
 
@@ -303,32 +329,20 @@ if system == '5':
     for i in range(m):
         axs[i, 0].set_ylim([10**-2, .3])
 
-# axs[0, 2].set_ylim([10**-4, 10**-1])
-
 axs[0, 0].set_title(r'$\tilde{\bm{u}}=P_{\Phi^*}\bm{u}$')
-axs[0, 1].set_title(r'$\tilde{\bm{u}}=P_{\Phi}\bm{u}$')
+axs[0, 1].set_title(r'$\tilde{\bm{u}}=P_{\hat{\Phi}}\bm{u}$')
 axs[0, 2].set_title(r'$\tilde{\bm{u}}={\tt IterPSDN}(\alpha=$'
                     f'{alpha})')
-# for j in range(3):
-#     axs[0, j].title.set_size(10)
 
 for i in range(m):
     axs[i, 0].legend()
-
-# Lines, Labels = axs[0, 0].get_legend_handles_labels()
-# idx = np.argsort(Labels)
-# LabelsNew = [Labels[i] for i in list(idx)]
-# LinesNew = [Lines[i] for i in list(idx)]
-#
-# fig.legend(LinesNew, LabelsNew, loc='upper center',
-#            bbox_to_anchor=(0.5, 0), ncol=3, handlelength=4)
 
 fig.set_dpi(600.0)
 fig.tight_layout(rect=[0.01, 0.01, 0.01, 0.01])
 plt.savefig(f'{out_dir}/{out_file}', pad_inches=0)
 fig.show()
 
-# %%
+# %% Save to file
 with open(f'{out_dir}/{out_file[:-4]}_a.pkl', 'wb') as fh:
     pickle.dump(u_errors_a, fh)
 with open(f'{out_dir}/{out_file[:-4]}_b.pkl', 'wb') as fh:
@@ -336,111 +350,112 @@ with open(f'{out_dir}/{out_file[:-4]}_b.pkl', 'wb') as fh:
 with open(f'{out_dir}/{out_file[:-4]}_c.pkl', 'wb') as fh:
     pickle.dump(u_errors_c, fh)
 
-# %% Convergange of Phi to Phi_star
 
-system = '4'
-ttrain = 10
-N = 1000
-sys_params, u0, d = sys.get_system_values(system)
-nu = 0.01
-ii = 0
-Psi_norm = []
-Psi_dagger_norm = []
-Delta_Psi_norm = []
-N_vec2 = np.logspace(1, 4, 5).astype(int)
-for N in N_vec2:
-    N = N + 1
-    t = np.linspace(0, ttrain, num=N)
-    A = utils.get_discrete_integral_matrix(t)
-    u, u_actual, du_actual, c_actual = sys.setup_system(t,
-                                                        nu,
-                                                        d,
-                                                        system[0],
-                                                        sys_params=sys_params,
-                                                        u0=u0,
-                                                        seed=1)
+# # %% Convergange of Phi to Phi_star
 
-    Theta_actual = mlu.make_Theta(u_actual, d=d)
-    Theta = mlu.make_Theta(u, d=d)
+# system = '4'
+# ttrain = 10
+# N = 1000
+# sys_params, u0, d = sys.get_system_values(system)
+# nu = 0.01
+# ii = 0
+# Psi_norm = []
+# Psi_dagger_norm = []
+# Delta_Psi_norm = []
+# N_vec2 = np.logspace(1, 4, 5).astype(int)
+# for N in N_vec2:
+#     N = N + 1
+#     t = np.linspace(0, ttrain, num=N)
+#     A = utils.get_discrete_integral_matrix(t)
+#     u, u_actual, du_actual, c_actual = sys.setup_system(t,
+#                                                         nu,
+#                                                         d,
+#                                                         system[0],
+#                                                         sys_params=sys_params,
+#                                                         u0=u0,
+#                                                         seed=1)
 
-    Phi = A @ Theta
-    bmone = np.ones(N).reshape(-1, 1)
-    Psi = np.hstack((bmone, Phi)) / np.sqrt(N)
-    Phi_actual = A @ Theta_actual
-    Psi_actual = np.hstack((bmone, Phi_actual)) / np.sqrt(N)
+#     Theta_actual = mlu.make_Theta(u_actual, d=d)
+#     Theta = mlu.make_Theta(u, d=d)
 
-    Psi_norm.append(la.norm(Psi_actual))
-    Psi_dagger_norm.append(la.norm(la.pinv(Psi_actual)))
-    Delta_Psi_norm.append(la.norm(Psi - Psi_actual))
+#     Phi = A @ Theta
+#     bmone = np.ones(N).reshape(-1, 1)
+#     Psi = np.hstack((bmone, Phi)) / np.sqrt(N)
+#     Phi_actual = A @ Theta_actual
+#     Psi_actual = np.hstack((bmone, Phi_actual)) / np.sqrt(N)
 
-# Plot results
-fig2, ax2 = plt.subplots(3, 1)
-ax2[0].plot(N_vec2, Psi_norm, label=r'\|\Psi^*\|')
-ax2[1].plot(N_vec2, Psi_dagger_norm, label=r'\|(\Psi^*)^\dagger\|')
-ax2[2].plot(N_vec2, Delta_Psi_norm, label=r'\|\Delta \Psi\|')
-for i in range(3):
-    ax2[i].set_ylabel('Norm value')
-    ax2[i].set_xlabel('N')
-    ax2[i].loglog()
-fig2.show()
+#     Psi_norm.append(la.norm(Psi_actual))
+#     Psi_dagger_norm.append(la.norm(la.pinv(Psi_actual)))
+#     Delta_Psi_norm.append(la.norm(Psi - Psi_actual))
 
-# %% Variance of library and bound
+# # Plot results
+# fig2, ax2 = plt.subplots(3, 1)
+# ax2[0].plot(N_vec2, Psi_norm, label=r'\|\Psi^*\|')
+# ax2[1].plot(N_vec2, Psi_dagger_norm, label=r'\|(\Psi^*)^\dagger\|')
+# ax2[2].plot(N_vec2, Delta_Psi_norm, label=r'\|\Delta \Psi\|')
+# for i in range(3):
+#     ax2[i].set_ylabel('Norm value')
+#     ax2[i].set_xlabel('N')
+#     ax2[i].loglog()
+# fig2.show()
 
-system = '4'
-ttrain = 15
-sys_params, u0, d = sys.get_system_values(system)
-m = np.size(u0)
-nu = 0.01
-N = 1000
-n_rep = 100
-t = np.linspace(0, ttrain, num=N)
-seed = 998711
+# # %% Variance of library and bound
 
-# Find a variance estimate using mulitple Theta realizations
-Thetas = []
-for i in range(n_rep):
-    u, u_actual, du_actual, c_actual = sys.setup_system(t,
-                                                        nu,
-                                                        d,
-                                                        system[0],
-                                                        sys_params=sys_params,
-                                                        u0=u0,
-                                                        seed=seed)
-    Theta_temp = mlu.make_Theta(u, d=d)
-    Theta = mlu.center_Theta(Theta_temp, d, m, nu)
-    Thetas.append(Theta)
-Theta_actual = mlu.make_Theta(u_actual, d=d)
-Theta_var = np.zeros(Theta_actual.shape)
-for td in Thetas:
-    Theta_var += (td - Theta_actual)**2
-Theta_var = 1 / n_rep * Theta_var
-np.max(Theta_var, axis=0)
+# system = '4'
+# ttrain = 15
+# sys_params, u0, d = sys.get_system_values(system)
+# m = np.size(u0)
+# nu = 0.01
+# N = 1000
+# n_rep = 100
+# t = np.linspace(0, ttrain, num=N)
+# seed = 998711
 
-# Find variance bound for each basis element
-mi_mat = mlu.make_mi_mat(m, d)
-p = np.size(mi_mat, 0)
-var_bounds = []
-for mi in mi_mat[1:]:
-    prod1 = 1
-    prod2 = 1
-    for k in range(m):
-        sum1 = 0
-        sum2 = 0
-        for j in range(0, mi[k] + 1):
-            if j <= mi[k] / 2:
-                u_term1 = u_actual[k, :]**(mi[k] - 2 * j)
-                c1 = utils.ncr(mi[k], 2 * j)
-                sum1 += u_term1 * c1 * nu**j * np.prod(range(2 * j - 1, 0, -2))
-            u_term2 = u_actual[k, :]**(2 * mi[k] - 2 * j)
-            c2 = utils.ncr(2 * mi[k], 2 * j)
-            sum2 += u_term2 * c2 * nu**j * np.prod(range(2 * j - 1, 0, -2))
+# # Find a variance estimate using mulitple Theta realizations
+# Thetas = []
+# for i in range(n_rep):
+#     u, u_actual, du_actual, c_actual = sys.setup_system(t,
+#                                                         nu,
+#                                                         d,
+#                                                         system[0],
+#                                                         sys_params=sys_params,
+#                                                         u0=u0,
+#                                                         seed=seed)
+#     Theta_temp = mlu.make_Theta(u, d=d)
+#     Theta = mlu.center_Theta(Theta_temp, d, m, nu)
+#     Thetas.append(Theta)
+# Theta_actual = mlu.make_Theta(u_actual, d=d)
+# Theta_var = np.zeros(Theta_actual.shape)
+# for td in Thetas:
+#     Theta_var += (td - Theta_actual)**2
+# Theta_var = 1 / n_rep * Theta_var
+# np.max(Theta_var, axis=0)
 
-        prod1 *= sum1
-        prod2 *= sum2
+# # Find variance bound for each basis element
+# mi_mat = mlu.make_mi_mat(m, d)
+# p = np.size(mi_mat, 0)
+# var_bounds = []
+# for mi in mi_mat[1:]:
+#     prod1 = 1
+#     prod2 = 1
+#     for k in range(m):
+#         sum1 = 0
+#         sum2 = 0
+#         for j in range(0, mi[k] + 1):
+#             if j <= mi[k] / 2:
+#                 u_term1 = u_actual[k, :]**(mi[k] - 2 * j)
+#                 c1 = utils.ncr(mi[k], 2 * j)
+#                 sum1 += u_term1 * c1 * nu**j * np.prod(range(2 * j - 1, 0, -2))
+#             u_term2 = u_actual[k, :]**(2 * mi[k] - 2 * j)
+#             c2 = utils.ncr(2 * mi[k], 2 * j)
+#             sum2 += u_term2 * c2 * nu**j * np.prod(range(2 * j - 1, 0, -2))
 
-    var_bounds.append(np.max(prod2 - prod1**2))
+#         prod1 *= sum1
+#         prod2 *= sum2
 
-fig3, ax3 = plt.subplots()
-ax3.plt(range(1, p), np.max(Theta_var, axis=0)[1:])
-ax3.plt(range(1, p), np.array(var_bounds))
-fig3.show()
+#     var_bounds.append(np.max(prod2 - prod1**2))
+
+# fig3, ax3 = plt.subplots()
+# ax3.plt(range(1, p), np.max(Theta_var, axis=0)[1:])
+# ax3.plt(range(1, p), np.array(var_bounds))
+# fig3.show()

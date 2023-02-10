@@ -730,7 +730,7 @@ if system=='5':
 axs[0, 1].legend(ncol=2, loc='lower center', bbox_to_anchor=(.5, 1))
 axs[0, 0].legend(ncol=2, loc='lower center', bbox_to_anchor=(.5, 1))
 nm = f'{description}_u_pred.pdf'
-# plt.savefig(f'{bdir}/output/presentation_figs/{nm}')
+plt.savefig(f'{bdir}/output/presentation_figs/{nm}')
 plt.show()
 
 # ax = plt.figure().add_subplot(projection='3d')

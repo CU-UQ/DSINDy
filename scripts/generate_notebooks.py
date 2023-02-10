@@ -82,10 +82,10 @@ def run_notebook_set(system,
                              bdir=bdir)
 
 
-system = '2a'
+system = '2b'
 N_vec = [1000]
 nu_vec = [1]
-run_notebook_set(system, N_vec, start=4, n_realizations=1, nu_vec=nu_vec)
+run_notebook_set(system, N_vec, start=25, n_realizations=1, nu_vec=nu_vec)
 
 # system = '2b'
 # N_vec = [250]

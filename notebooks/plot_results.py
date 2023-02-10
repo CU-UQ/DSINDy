@@ -96,7 +96,8 @@ def generate_df(nu_vec, N=1000, ttrain=10, system='2', reps=30):
                     continue
 
 
-        
+
+        # plt.plot(err_df.loc['du2_socp_sm'])
         err_df.loc['c1_socp_theory']
         n = np.size(err_df, 1)
 
@@ -217,7 +218,7 @@ def gen_plot(cols,
 
     # Plot results at different noise levels
     fig, axs = plt.subplots(1, len(dfs_sig), sharey=True)
-    fig.set_size_inches(1.75 * len(dfs_sig), 2)
+    fig.set_size_inches(1.75 * len(dfs_sig), 2.2)
     if type(axs) is not np.ndarray:
         axs = [axs]
     if include_std:
@@ -709,7 +710,7 @@ if len(dfs_mean) == 1:
                     dfs_mean[0],
                     dfs_sem[0],
                     labels=labels_c,
-                    fn=f'{base_dir}/{base_dir}_coef_summary_err{int(mstart/3)}',
+                    fn=f'{base_dir}/{base_dir}_coef_summary_err_{int(mstart/3)}',
                     error_type='c',
                     save_legend=True,
                     mstart=mstart)
@@ -728,33 +729,7 @@ if len(dfs_mean) == 1:
                 fn=f'{base_dir}/{base_dir}_socp_summary_err',
                 colors=[colors[0], colors[3]])
 
-    # Reconstruction Error (sem)
-    cols_u = ['pred_socp_sm', 'pred_lasso', 'WSINDY']
-    labels_u = {
-        'pred_socp_sm': 'DSINDy',
-        'pred_lasso': r'$\ell_1$-SINDy',
-        'WSINDY': 'WSINDy'
-    }
-    gen_plot_set(cols_u,
-                 dfs_mean[0],
-                 dfs_sem[0],
-                 labels=labels_u,
-                 fn=f'{base_dir}/{base_dir}_u_summary_err',
-                 error_type='u')
 
-    # Reconstruction Error (sem)
-    cols_u_socp = ['pred_socp_sm', 'pred_socp_theory']
-    labels_u_socp = {
-        'pred_socp_sm': 'DSINDy (Pareto)',
-        'pred_socp_theory': 'DSINDy (theory)'
-    }
-    gen_plot_set(cols_u_socp,
-                 dfs_mean[0],
-                 dfs_sem[0],
-                 labels=labels_u_socp,
-                 fn=f'{base_dir}/{base_dir}_u_socp_summary_err',
-                 error_type='u',
-                 colors=[colors[0], colors[3]])
 
     # Derivative Error (std)
     cols_du = ['socp_sm', 'tikreg']
@@ -766,7 +741,7 @@ if len(dfs_mean) == 1:
                     dfs_std[0],
                     ylabel_start=f'{SysName}\n\n',
                     labels=labels_du,
-                    fn=f'{base_dir}/{base_dir}_du_summary_err{int(mstart/3)}',
+                    fn=f'{base_dir}/{base_dir}_du_summary_err_{int(mstart/3)}',
                     error_type='du',
                     save_legend=True,
                     mstart=mstart)
@@ -782,13 +757,15 @@ if len(dfs_mean) == 1:
                     dfs_std[0],
                     ylabel_start=f'{SysName}\n\n',
                     labels=labels_smooth,
-                    fn=f'{base_dir}/{base_dir}_smooth_summary_err{int(mstart/3)}',
+                    fn=f'{base_dir}/{base_dir}_smooth_summary_err_{int(mstart/3)}',
                     error_type='us',
                     save_legend=True,
                     mstart=mstart)
         mstart = mstart + 3
 
-    # Prediction ability
+    # Examine reconstruciton error.
+    # For Lorenz 96 look at short term time prediction ability
+    # For all other systems look at recontruction error/failure rate
     if system == '5':
         cols_t = ['t_fail_socp_sm', 't_fail_lasso', 't_fail_WSINDY']
         labels_t = {
@@ -815,35 +792,50 @@ if len(dfs_mean) == 1:
                      colors=[colors[0], colors[3]],
                      fn=f'{base_dir}/{base_dir}_t_prediction_socp',
                      error_type='time')
+    else:
 
-    # Failed solution
-    cols_fail = ['socp_failed', 'lasso_failed', 'wsindy_failed']
-    labels_fail = {
-        'lasso_failed': r'$\ell_1$-SINDy',
-        'socp_failed': 'DSINDy',
-        'wsindy_failed': 'WSINDy',
-        'socp_theory_failed': 'DSINDy (theory)'
-    }
-    gen_failure_plot(cols_fail,
-                     dfs_mean,
-                     'Failure rate',
-                     labels_fail,
-                     fn=f'{base_dir}/{base_dir}_failed')
+        # Reconstruction Error (sem)
+        cols_u = ['pred_socp_sm', 'pred_lasso', 'WSINDY']
+        labels_u = {
+            'pred_socp_sm': 'DSINDy',
+            'pred_lasso': r'$\ell_1$-SINDy',
+            'WSINDY': 'WSINDy'
+        }
+        gen_plot_set(cols_u,
+                    dfs_mean[0],
+                    dfs_sem[0],
+                    labels=labels_u,
+                    fn=f'{base_dir}/{base_dir}_u_summary_err',
+                    error_type='u')
 
-    # Failed solution
-    cols_fail = ['socp_failed', 'socp_theory_failed']
-    labels_fail = {
-        'lasso_failed': r'$\ell_1$-SINDy',
-        'socp_failed': 'DSINDy',
-        'wsindy_failed': 'WSINDy',
-        'socp_theory_failed': 'DSINDy (theory)'
-    }
-    gen_failure_plot(cols_fail,
-                     dfs_mean,
-                     'Failure rate',
-                     labels_fail,
-                     fn=f'{base_dir}/{base_dir}_socp_failed',
-                     colors=[colors[0], colors[3]])
+        # Failed solution
+        cols_fail = ['socp_failed', 'lasso_failed', 'wsindy_failed']
+        labels_fail = {
+            'lasso_failed': r'$\ell_1$-SINDy',
+            'socp_failed': 'DSINDy',
+            'wsindy_failed': 'WSINDy',
+            'socp_theory_failed': 'DSINDy (theory)'
+        }
+        gen_failure_plot(cols_fail,
+                        dfs_mean,
+                        'Failure rate',
+                        labels_fail,
+                        fn=f'{base_dir}/{base_dir}_failed')
+
+        # Failed solution
+        cols_fail = ['socp_failed', 'socp_theory_failed']
+        labels_fail = {
+            'lasso_failed': r'$\ell_1$-SINDy',
+            'socp_failed': 'DSINDy',
+            'wsindy_failed': 'WSINDy',
+            'socp_theory_failed': 'DSINDy (theory)'
+        }
+        gen_failure_plot(cols_fail,
+                        dfs_mean,
+                        'Failure rate',
+                        labels_fail,
+                        fn=f'{base_dir}/{base_dir}_socp_failed',
+                        colors=[colors[0], colors[3]])
 
 else:
 
@@ -874,11 +866,6 @@ else:
                 f'c{i}_lasso': r'$\ell_1$-SINDy'
             }
 
-        cols_socp_c = [f'c_socp_sm', f'c_socp_theory']
-        labels_socp_c = {
-            f'c_socp_sm': 'DSINDy (Pareto)',
-            f'c_socp_theory': 'DSINDy (theory)'
-        }
 
         # Coefficient Error
         gen_plot(cols_c,
@@ -889,17 +876,26 @@ else:
                  labels=labels_c,
                  fn=f'{base_dir}/{base_dir}_c{i}_err')
 
-        # Coefficient Error SOCP
-        gen_plot(cols_socp_c,
-                 dfs_mean,
-                 dfs_sem,
-                 r'Average relative $\bm{c}$ error',
-                 N_vec,
-                 labels=labels_socp_c,
-                 fn=f'{base_dir}/{base_dir}_c_socp_err',
-                 colors=[colors[0], colors[3]])
+    cols_socp_c = [f'c_socp_sm', f'c_socp_theory']
+    labels_socp_c = {
+        f'c_socp_sm': 'DSINDy (Pareto)',
+        f'c_socp_theory': 'DSINDy (theory)'
+    }
+
+    # Coefficient Error SOCP
+    gen_plot(cols_socp_c,
+                dfs_mean,
+                dfs_sem,
+                r'Avg. rel. $\bm{c}$ error',
+                N_vec,
+                labels=labels_socp_c,
+                fn=f'{base_dir}/{base_dir}_c_socp_err',
+                colors=[colors[0], colors[3]])
 
     # Derivative error
+    for k in range(6):
+        print(dfs_mean[k]['du2_socp_sm'] - dfs_std[k]['du2_socp_sm'])
+    
     for i in range(1, m + 1):
         cols_du = [f'du{i}_socp_sm', f'du{i}_tikreg']
         labels_du = {
@@ -932,20 +928,20 @@ else:
                  labels=labels_u,
                  fn=f'{base_dir}/{base_dir}_u{i}_err')
 
-        cols_socp_u = [f'u{i}_pred_socp_sm', f'u{i}_pred_socp_theory']
-        labels_socp_u = {
-            f'u{i}_pred_socp_es': 'DSINDy (Pareto)',
-            f'u{i}_pred_socp_sm': 'DSINDy (Pareto)',
-            f'u{i}_pred_socp_theory': 'DSINDy (theory)'
-        }
-        gen_plot(cols_socp_u,
-                 dfs_mean,
-                 dfs_sem,
-                 r'Relative $\bm{u}_' + f'{i}' + r'$ error',
-                 N_vec,
-                 labels=labels_socp_u,
-                 fn=f'{base_dir}/{base_dir}_u{i}_socp_err',
-                 colors=[colors[0], colors[3]])
+    cols_socp_u = [f'u_pred_socp_sm', f'u_pred_socp_theory']
+    labels_socp_u = {
+        f'u_pred_socp_es': 'DSINDy (Pareto)',
+        f'u_pred_socp_sm': 'DSINDy (Pareto)',
+        f'u_pred_socp_theory': 'DSINDy (theory)'
+    }
+    gen_plot(cols_socp_u,
+                dfs_mean,
+                dfs_sem,
+                r'Avg. rel. $\bm{u}$ error',
+                N_vec,
+                labels=labels_socp_u,
+                fn=f'{base_dir}/{base_dir}_u_socp_err',
+                colors=[colors[0], colors[3]])
     # Failed solution
     cols_fail = ['socp_failed', 'lasso_failed', 'wsindy_failed']
     labels_fail = {
