@@ -1,5 +1,3 @@
-docker-compose.yml
-Dockerfile
 *~
 /DSINDy.egg-info
 /current_output
