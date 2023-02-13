@@ -149,7 +149,7 @@ utils.disp_table(pd.DataFrame.from_dict(err_dict_u_prior,
                  dig=6)
 
 if get_GP:
-    pf.plot_smooth_states(u_proj, u_smooth, u, u_actual)
+    pf.plot_smooth_states(u_proj, u, u_actual, u_GP=u_smooth)
 
 # %%  tags=["remove_cell"]
 #
@@ -672,10 +672,14 @@ pro.start()
 sol_dict['WSINDy'] = que.get()
 # %% tags=["remove_cell"]
 
-fig, axs = plt.subplots(m, 2, sharex='col', sharey=True,gridspec_kw={'width_ratios':[1,2]})
-if system=='2b':
+fig, axs = plt.subplots(m,
+                        2,
+                        sharex='col',
+                        sharey=True,
+                        gridspec_kw={'width_ratios': [1, 2]})
+if system == '2b':
     fig.set_size_inches(6, 3)
-if system=='5':
+if system == '5':
     fig.set_size_inches(6, 7)
 for i in range(m):
     axs[i, 0].plot(t, u[i], '.', label='Measurements', markersize=1)
@@ -716,16 +720,16 @@ for i in range(m):
                    color=cols[3])
 
     # plt.ylim(-1.1, 1.5)
-    if system=='5':
+    if system == '5':
         axs[i, 1].set_ylim(-11, 15)
 #    axs[i, 1].set_ylabel(fr'$u_{i+1}$')
 
 axs[m - 1, 0].set_xlabel(r'$t$')
 axs[m - 1, 1].set_xlabel(r'$t$')
 
-if system=='2b':
+if system == '2b':
     axs[0, 1].set_xlim([0, 20])
-if system=='5':
+if system == '5':
     axs[0, 1].set_xlim([5, 10])
 axs[0, 1].legend(ncol=2, loc='lower center', bbox_to_anchor=(.5, 1))
 axs[0, 0].legend(ncol=2, loc='lower center', bbox_to_anchor=(.5, 1))

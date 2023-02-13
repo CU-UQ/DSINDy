@@ -16,7 +16,12 @@ pio.renderers.default = 'notebook+plotly_mimetype'
 warnings.filterwarnings('ignore')
 
 
-def plot_smooth_states(u1, u2, u_noise, u_actual):
+def plot_smooth_states(
+    u1,
+    u_noise,
+    u_actual,
+    u_GP=None,
+):
     """Plot results of projection-based vs GP smoothing."""
     # Plot the results
     m = np.size(u1, 0)
@@ -25,7 +30,8 @@ def plot_smooth_states(u1, u2, u_noise, u_actual):
         fig.add_trace(
             go.Scatter(y=u_noise[i], name='Noisy data', mode='markers'))
         fig.add_trace(go.Scatter(y=u1[i], name='Projection method'))
-        fig.add_trace(go.Scatter(y=u2[i], name='Gaussian Process'))
+        if u_GP is not None:
+            fig.add_trace(go.Scatter(y=u_GP[i], name='Gaussian Process'))
         fig.add_trace(go.Scatter(y=u_actual[i], name='Actual'))
         fig.update_layout(width=600, height=400)
         fig.show()
@@ -35,8 +41,9 @@ def plot_smooth_states(u1, u2, u_noise, u_actual):
         fig = go.Figure(layout_title_text=f'u{i+1} error results')
         fig.add_trace(
             go.Scatter(y=u1[i] - u_actual[i], name='Projection method'))
-        fig.add_trace(
-            go.Scatter(y=u2[i] - u_actual[i], name='Gaussian Process'))
+        if u_GP is not None:
+            fig.add_trace(
+                go.Scatter(y=u_GP[i] - u_actual[i], name='Gaussian Process'))
         fig.update_layout(width=600, height=400)
         fig.show()
 

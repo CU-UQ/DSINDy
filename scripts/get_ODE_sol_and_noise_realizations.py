@@ -306,7 +306,7 @@ run_replications(system,
                  ttrain,
                  start=start,
                  add_to_file=add_to_file,
-                 replications=30,
+                 replications=2,
                  bdir=bdir)
 
 # %%
