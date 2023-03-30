@@ -42,10 +42,10 @@ system = '5'
 out_dir = '/home/jacqui/projects/DSINDy/current_output/PSDN_Theory/'
 load_dir = '/home/jacqui/projects/DSINDy/paper_PSDN_theory/'
 
-load_from_file=True
+load_from_file = True
+alpha = .1
+N_vec = np.logspace(2, 4, 5).astype(int)
 if not load_from_file:
-    N_vec = np.logspace(2, 4, 5).astype(int)
-    alpha = .1
     max_iter = 1000
 
 if system == '5':
@@ -70,7 +70,7 @@ P = int(sps.factorial(m + d) / (sps.factorial(m) * sps.factorial(d)))
 
 use_actual_P = True
 center_Theta = True
-N = 2500
+N = 5000
 t = np.linspace(0, ttrain, num=N)
 nu = 0.1
 # Look at larger noise for Lorenz 96
@@ -91,6 +91,27 @@ for i in range(m):
     plt.xlabel('t')
     plt.ylabel(rf'$u_{i+1}$')
     fig2.show()
+
+# Estimate the value of C2 for the system
+Theta_actual = mlu.make_Theta(u_actual, d=d)
+sum_squared_error = np.zeros(Theta_actual.shape)
+N_var = 10000
+for i in range(N_var):
+    u = u_actual + np.random.normal(0, np.sqrt(nu), (m, N))
+    Theta_temp = mlu.make_Theta(u, d=d)
+    Theta = mlu.center_Theta(Theta_temp, d, m, nu)
+    Delta_Theta = Theta - Theta_actual
+    sum_squared_error += Delta_Theta**2
+sum_max_var = np.sum(np.sqrt(np.max(sum_squared_error / N_var, axis=0)))
+
+A = utils.get_discrete_integral_matrix(t)
+Phi_star = np.hstack((np.ones(N).reshape(-1, 1), A @ Theta_actual))
+Psi_star = Phi_star / np.sqrt(N)
+pseudo_Psi_star_norm = la.norm(la.pinv(Psi_star))
+
+C2 = ttrain * pseudo_Psi_star_norm * sum_max_var
+
+print(f'The value of C2 for system {system} is {C2:.2f}')
 
 # %%
 
@@ -122,6 +143,7 @@ def get_error_with_increasing_N(nu,
                                 u0=u0)[1]
     u_err_theory_vec.append(
         np.sqrt(nu / la.norm(u_actual, axis=1)**2 * (P + 1)))
+
     u_err_mean_noise_vec.append(
         np.sqrt(nu * N_min) * 1 / la.norm(u_actual, axis=1))
 
@@ -234,8 +256,8 @@ def plot_results(u_errors, col, sig):
 
 # %% Obtain smoothing results for the 10 simulations
 
-
 if load_from_file:
+    sig = np.sqrt(nu_vec[0])
     with open(f'{load_dir}/{out_file[:-4]}_a.pkl', 'rb') as fh:
         u_errors_a = pickle.load(fh)
     with open(f'{load_dir}/{out_file[:-4]}_b.pkl', 'rb') as fh:
@@ -276,7 +298,7 @@ else:
 # %%
 
 # For Lorenz 96 model only plot first state
-if system=='5':
+if system == '5':
     m = 1
 
 fig, axs = plt.subplots(m, 3)
@@ -349,7 +371,6 @@ with open(f'{out_dir}/{out_file[:-4]}_b.pkl', 'wb') as fh:
     pickle.dump(u_errors_b, fh)
 with open(f'{out_dir}/{out_file[:-4]}_c.pkl', 'wb') as fh:
     pickle.dump(u_errors_c, fh)
-
 
 # # %% Convergange of Phi to Phi_star
 
