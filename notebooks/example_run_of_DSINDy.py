@@ -20,10 +20,10 @@ seed = 111111
 
 # Specify system
 # system = '2a'  # Duffing oscillator (PS1)
-system = '2b'  # Duffing oscillator (PS2)
+# system = '2b'  # Duffing oscillator (PS2)
 # system = '3'  # Van der Pol oscillator
 # system = '4'  # Rossler attractor
-# system = '5'  # Lorenz 96 model
+system = '5'  # Lorenz 96 model
 
 # Set other system parameters
 ttrain = 10  # Duration of training time
@@ -240,8 +240,8 @@ for i in range(m):
         fig1.add_trace(go.Scatter(x=t_test, y=u_cur[i], name=key))
         fig2.add_trace(go.Scatter(x=t_test, y=u_cur_err[i], name=key))
     fig1.add_trace(go.Scatter(x=t_test, y=u_actual_test[i], name='Actual'))
-    fig1.add_vline(x=t_fail_dict['socp_sm'], line_dash='dash')
-    fig2.add_vline(x=t_fail_dict['socp_sm'], line_dash='dash')
+    # fig1.add_vline(x=t_fail_dict['socp_sm'], line_dash='dash')
+    # fig2.add_vline(x=t_fail_dict['socp_sm'], line_dash='dash')
     fig1.update_layout(title_text=f'Simulation Results (u{i+1})',
                        width=600,
                        height=400)
